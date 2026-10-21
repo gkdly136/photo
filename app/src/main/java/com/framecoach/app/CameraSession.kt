@@ -163,7 +163,7 @@ class CameraSession(
                 // Use the frame border for portrait stability so the subject can move at the center.
                 if (!ignorePerson || x < 7 || x >= 41 || y < 5 || y >= 31) background.add(value)
             }
-            return FrameReading(background.toFloatArray(), Light(all.average().toFloat(), all.count { it < .09f }.toFloat() / all.size, all.count { it > .94f }.toFloat() / all.size), now)
+            return FrameReading(background.toFloatArray(), PreviewLight.fromLuma(all.toFloatArray()), now)
         }
     }
 }
