@@ -97,6 +97,9 @@ class CameraSession(
                 try {
                     controller.initializationFuture.get()
                     controller.bindToLifecycle(owner)
+                    controller.cameraInfo?.cameraState?.observe(owner) { state ->
+                        if (!closed && state.error != null) onError("相机暂不可用，请检查权限或其他相机应用后重试。")
+                    }
                 } catch (_: Exception) { onError("相机启动失败，可切换到演示；请检查设备相机是否被其他应用占用。") }
             }
         }, main)

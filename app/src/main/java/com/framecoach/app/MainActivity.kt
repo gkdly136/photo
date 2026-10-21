@@ -114,7 +114,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         root.addView(modes)
 
         val stage = FrameLayout(this).apply { setBackgroundColor(Color.BLACK); minimumHeight = dp(100) }
-        preview = PreviewView(this)
+        preview = PreviewView(this).apply { id = R.id.camera_preview }
         demoView = DemoView(this)
         overlay = GuideOverlay(this).apply { onHorizon = { y -> horizon = y; if (ready) renderTips(); toast("已手动标记水平线") } }
         stage.addView(preview, match())
@@ -200,7 +200,11 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                     if (ready && SystemClock.elapsedRealtime() - lastTips > 1200) renderTips()
                 }
             },
-            onError = { message -> if (!demo) { status.text = message; toast(message) } }
+            onError = { message -> if (!demo) {
+                ready = false; gate.reset(); horizon = null
+                overlay.guidance = null; overlay.body = null; overlay.invalidate()
+                progress.progress = 0; showWaiting(); status.text = message; toast(message)
+            } }
         ).apply { portrait = mode == SceneMode.PORTRAIT; start() }
     }
 
