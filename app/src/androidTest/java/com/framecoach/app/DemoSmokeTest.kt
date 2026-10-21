@@ -12,6 +12,8 @@ import org.hamcrest.CoreMatchers.containsString
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.io.FileInputStream
+import org.junit.Assert.assertEquals
 
 @RunWith(AndroidJUnit4::class)
 class DemoSmokeTest {
@@ -38,9 +40,16 @@ class DemoSmokeTest {
     private fun screenshot(name: String) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val directory = File(instrumentation.targetContext.getExternalFilesDir(null), "screenshots").apply { mkdirs() }
-        instrumentation.uiAutomation.takeScreenshot()?.let { bitmap ->
+        requireNotNull(instrumentation.uiAutomation.takeScreenshot()) { "Screenshot must be available" }.let { bitmap ->
             File(directory, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
             bitmap.recycle()
+        }
+        // UTP uninstalls test APKs after the suite, removing app-specific external files.
+        // Copy only these synthetic demo screenshots to a shell-owned test output directory first.
+        val output = "/sdcard/Download/FrameCoachTestScreenshots"
+        instrumentation.uiAutomation.executeShellCommand("mkdir -p $output && cp '${File(directory, name).absolutePath}' '$output/$name' && test -s '$output/$name' && echo copied").use { descriptor ->
+            val result = FileInputStream(descriptor.fileDescriptor).bufferedReader().use { it.readText() }.trim()
+            assertEquals("Synthetic demo screenshot must survive test cleanup", "copied", result)
         }
     }
 }
