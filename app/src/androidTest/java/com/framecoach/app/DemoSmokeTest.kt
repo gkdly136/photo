@@ -1,6 +1,8 @@
 package com.framecoach.app
 
 import android.graphics.Bitmap
+import android.content.ContentValues
+import android.provider.MediaStore
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
@@ -11,9 +13,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.hamcrest.CoreMatchers.containsString
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
-import java.io.FileInputStream
-import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 
 @RunWith(AndroidJUnit4::class)
 class DemoSmokeTest {
@@ -39,17 +39,21 @@ class DemoSmokeTest {
 
     private fun screenshot(name: String) {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
-        val directory = File(instrumentation.targetContext.getExternalFilesDir(null), "screenshots").apply { mkdirs() }
-        requireNotNull(instrumentation.uiAutomation.takeScreenshot()) { "Screenshot must be available" }.let { bitmap ->
-            File(directory, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot()) { "Screenshot must be available" }
+        val resolver = instrumentation.targetContext.contentResolver
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, name)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/FrameCoachTestScreenshots")
+            put(MediaStore.Images.Media.IS_PENDING, 1)
+        }
+        val uri = requireNotNull(resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values))
+        try {
+            requireNotNull(resolver.openOutputStream(uri)).use { assertTrue(bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)) }
+            resolver.update(uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null)
+        } finally {
             bitmap.recycle()
         }
-        // UTP uninstalls test APKs after the suite, removing app-specific external files.
-        // Copy only these synthetic demo screenshots to a shell-owned test output directory first.
-        val output = "/sdcard/Download/FrameCoachTestScreenshots"
-        instrumentation.uiAutomation.executeShellCommand("mkdir -p $output && cp '${File(directory, name).absolutePath}' '$output/$name' && test -s '$output/$name' && echo copied").use { descriptor ->
-            val result = FileInputStream(descriptor.fileDescriptor).bufferedReader().use { it.readText() }.trim()
-            assertEquals("Synthetic demo screenshot must survive test cleanup", "copied", result)
-        }
+        // MediaStore pictures survive UTP uninstalling the app after the suite.
     }
 }
