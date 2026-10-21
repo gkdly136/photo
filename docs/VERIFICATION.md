@@ -3,7 +3,9 @@
 日期：2026-10-21。
 
 - 当前工作环境：Windows，发现 JBR 21；未配置 Android SDK、adb 或 Gradle。
-- 首版包含稳定检测与规则引擎单元测试，以及 Android 模拟器演示测试和截图。
+- 当前包含 21 个稳定检测与规则引擎单元测试，以及 Android 模拟器演示、相机预览与 JPEG 保存测试。
 - 自动构建工作流会执行 `:core:test :app:lintDebug :app:assembleDebug`，成功后再运行 `:app:connectedDebugAndroidTest`。
-- 实际构建、测试结果和安装包状态将在执行后补充，不能将存在工作流配置等同于通过。
+- 已验证基线：提交 `4d9db50b37adc892b0b1eb41fc59f5fd2916ab88` 的 [构建与测试](https://github.com/gkdly136/photo/actions/runs/39576451307) 全部通过：20 个核心单元测试、Lint、Debug APK、1 个 Android 15 模拟器演示测试。APK 已生成。
+- 当前新增的纵向构图测试、相机预览/拍照测试与标准 Wrapper 将再运行一次完整验证；最终结果会补充在本文件中。
+- 标准 Wrapper JAR 与 Gradle 官方 v8.11.1 仓库 Git blob `a4b76b9530d66f5e68d973ea569d8e19de379189` 一致。
 - 真实手机摄像头、ML Kit 检测准确率、前置镜像、温升与实际拍照仍需按照真机验收清单验证。

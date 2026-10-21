@@ -24,11 +24,13 @@
 2. 安装 Android SDK Platform 35、Build Tools 35.0.0，使用 JDK 17。
 3. 完成 Gradle 同步，运行 `app` 到手机，或构建 Debug APK。
 
-命令行需要 Gradle 8.11.1：
+命令行构建（标准 Gradle Wrapper 会下载 Gradle 8.11.1）：
 
 ```shell
-gradle :core:test :app:lintDebug :app:assembleDebug
+./gradlew :core:test :app:lintDebug :app:assembleDebug
 ```
+
+Windows PowerShell 使用 `.\gradlew.bat :core:test :app:lintDebug :app:assembleDebug`。
 
 APK 路径：`app/build/outputs/apk/debug/app-debug.apk`。
 

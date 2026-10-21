@@ -21,7 +21,9 @@ object Coach {
             val title = if (layout == Layout.CENTER) "把视线放在画面中轴" else "给人物留一点呼吸空间"
             val instruction = if (face == null) "请人物入镜，面部尽量清晰；绿色圆圈只是可尝试的面部位置。" else {
                 val dx = target!!.x - face.center.x
-                if (abs(dx) < .07f) "人物已接近建议位置；再检查头顶留白和背景。"
+                val dy = target.y - face.center.y
+                if (abs(dx) < .07f && abs(dy) > .10f) "保持人物横向位置，调整取景的上下留白，让面部靠近绿色落点。"
+                else if (abs(dx) < .07f) "人物已接近建议位置；再检查头顶留白和背景。"
                 else "让人物在画面中向${if (dx > 0) "右" else "左"}移一点，靠近绿色落点；这是人物位置方向。"
             }
             tips += Tip("构图", title, instruction, if (face == null) "尚未检测到清晰人脸；使用创作模板。" else "基于最大人脸的位置；多人场景请自行选择主角。", listOf("freeman", "nikon-background"))

@@ -32,6 +32,12 @@ class CoachTest {
     @Test fun centerLayoutIsAnAlternativeToThirds() {
         assertEquals(.5f, advise(Observation(light), layout = Layout.CENTER).target!!.x)
     }
+    @Test fun horizontalAlignmentAloneDoesNotClaimVerticalAlignment() {
+        val face = Face(Point(1f / 3, .8f), .1f, .1f, 0f, null)
+        val tip = advise(Observation(light, listOf(face))).tips.first { it.category == "构图" }
+        assertTrue(tip.instruction.contains("上下留白"))
+        assertFalse(tip.instruction.contains("已接近"))
+    }
     @Test fun landscapeHasNoPortraitOrExpressionInstructions() {
         val guidance = advise(Observation(light), SceneMode.LANDSCAPE)
         assertNull(guidance.target)
