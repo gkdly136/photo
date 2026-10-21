@@ -17,7 +17,15 @@
 
 ## 用户点名的书籍
 
-《摄影构图学》《风光摄影手册》《照片的本质》存在作者、译名和版本信息不足的问题。当前尚未确定具体版本，也未获取全文，不能标成“已学习”。后续应先核对作者、出版社、ISBN 与所需章节，再记录依法可使用的概念摘要和页码。
+用户已确认作者为本·克莱门茨、斯科特·凯尔、斯蒂芬·肖尔；以下是已核实的英文对应书目或作者公开内容。中文译本版本仍需另行核对，不能将读过书介当作通读正文。
+
+| 书籍 | 核对结果 | 当前阅读范围与转化 |
+| --- | --- | --- |
+| 《照片的本质》 | [Stephen Shore: The Nature of Photographs: A Primer，Phaidon，ISBN 9780714859040](https://www.phaidon.com/en-us/products/the-nature-of-photographs) | 核对作者、136 页英文版和出版社书介。将“学习观看与理解照片”作为产品研究目标，不声称掌握具体章节论证 |
+| 《摄影构图学》 | [Photographic composition，Ben Clements / David Rosenfeld，Van Nostrand Reinhold，1980，©1974](https://search.worldcat.org/title/Photographic-composition/oclc/988073145) | 核对馆藏书目、作者与出版信息；未读取正文，不将具体规则强行归因 |
+| 《风光摄影手册》 | [Scott Kelby 本人介绍其 The Landscape Photography Book 公开节选](https://scottkelby.com/four-landscape-photography-recipes/)，链接到 [出版社 Landscape Recipes](https://rockynook.com/article/landscape-recipes/) | 已阅读四个公开案例的说明。原创提炼：先判断天空/前景的表达价值，再选画面占比；低机位有助于尝试前景关系，具体效果需现场比较。书中单个案例参数不能直接当成所有手机的建议 |
+
+Scott Kelby 的姓名常译为斯科特·凯尔比；这里按用户提供的作者线索匹配，未擅自确认中文 ISBN。
 
 本项目的 `freeman` 条目是已核实的独立参考书，**不把它当成用户所说《摄影构图学》的已确认版本**。
 
@@ -52,6 +60,8 @@
 ```
 
 当前没有训练数据集，没有将获奖目录直接转成“好照片”标签。数据收集应覆盖普通场景、失败样本、不同肤色、年龄、体型、行动能力、焦距与光照，并请摄影师复核。
+
+已额外阅读 [The Strata of Time 官方系列说明](https://www.worldphoto.org/sony-world-photography-awards/winners-galleries/2025/professional/strata-time-seido-kino?back=category)：作者将历史与当下的同一地点影像叠置，讨论发展与环境、人口的关系。由此得到的产品设计推论是：获奖价值可能来自时间关系与议题表达，不能靠单张取景的三分法或亮度评分重现。当前阅读的是作者说明，并未完成逐幅视觉分析或获得图片训练权。
 
 ## 实现依据
 

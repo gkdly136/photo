@@ -228,6 +228,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private fun acceptStability(state: Stability) {
         progress.progress = (state.progress * 100).toInt()
         if (state.moving) {
+            horizon = null
             if (ready) { overlay.guidance = null; overlay.invalidate(); showWaiting() }
             ready = false
             status.text = "镜头正在移动 · 稳定后重新观察"

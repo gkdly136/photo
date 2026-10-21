@@ -19,7 +19,7 @@ object Coach {
         }
         if (mode == SceneMode.PORTRAIT) {
             val title = if (layout == Layout.CENTER) "把视线放在画面中轴" else "给人物留一点呼吸空间"
-            val instruction = if (face == null) "请人物入镜，面部尽量清晰；绿色圆圈只是可尝试的眼部落点。" else {
+            val instruction = if (face == null) "请人物入镜，面部尽量清晰；绿色圆圈只是可尝试的面部位置。" else {
                 val dx = target!!.x - face.center.x
                 if (abs(dx) < .07f) "人物已接近建议位置；再检查头顶留白和背景。"
                 else "让人物在画面中向${if (dx > 0) "右" else "左"}移一点，靠近绿色落点；这是人物位置方向。"
@@ -47,9 +47,9 @@ object Coach {
                 Layout.THIRDS -> "天空更精彩就把水平线靠下；地面更精彩就靠上。点击画面标记你看到的水平线。"
                 Layout.CENTER -> "将视觉中心放在中轴附近；有倒影时，可以尝试上下呼应。"
                 Layout.DEPTH -> "在近处找一块石头、树影或小径，再观察它与远景的关系。"
-            }, "这是你选择的构图方案；当前未自动识别山峰、道路或天空。", listOf("freeman"))
-            tips += Tip("机位", "小范围移动，再比较", "在安全、平稳的位置试着降低一点机位；观察前后景是否分开。", "单个镜头画面不能恢复完整三维空间；不提供盲目的移动距离。", listOf("freeman"))
-            tips += Tip("观察", "为这一张找一个理由", "先说出你想留下的光、形状或故事，再决定是否采用辅助线。", "创作提示；优秀作品也常常打破固定构图。", listOf("moma-context", "swpa-landscape"))
+            }, "这是你选择的构图方案；当前未自动识别山峰、道路或天空。", listOf("freeman", "kelby-landscape"))
+            tips += Tip("机位", "小范围移动，再比较", "在安全、平稳的位置试着降低一点机位；观察前后景是否分开。", "单个镜头画面不能恢复完整三维空间；不提供盲目的移动距离。", listOf("freeman", "kelby-landscape"))
+            tips += Tip("观察", "为这一张找一个理由", "先说出你想留下的光、形状或故事，再决定是否采用辅助线。", "创作提示；优秀作品也常常打破固定构图。", listOf("moma-context", "shore-nature", "swpa-landscape"))
         }
         if (observation.detectorError) tips += Tip("检测", "视觉检测暂不可用", "可以继续参考构图线；重新进入取景可重试检测。", "检测器返回错误；没有把缺失结果当作无人入镜。", listOf("mlkit-face"))
         return Guidance(tips, target, if (mode == SceneMode.LANDSCAPE) horizon?.coerceIn(0f, 1f) else null)
