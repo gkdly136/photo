@@ -20,6 +20,8 @@
 
 最低 **Android 10 / API 29**。不需要账号、服务器或 API Key。
 
+已生成 [2026-10-21 首版试用包](https://github.com/gkdly136/photo/actions/runs/39583156155/artifacts/12338222181)。下载 ZIP 后解压其中的 APK 安装；这是 Debug 通用包，约 130 MiB。完整结果与截图见 [验证记录](docs/VERIFICATION.md)。
+
 1. 用 Android Studio 打开项目目录。
 2. 安装 Android SDK Platform 35、Build Tools 35.0.0，使用 JDK 17。
 3. 完成 Gradle 同步，运行 `app` 到手机，或构建 Debug APK。

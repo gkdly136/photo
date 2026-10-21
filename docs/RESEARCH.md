@@ -70,3 +70,4 @@ Scott Kelby 的姓名常译为斯科特·凯尔比；这里按用户提供的作
 - [ML Kit Face Android](https://developers.google.com/ml-kit/vision/face-detection/android)：bundled 模型、输入尺寸和低光限制。
 - [ML Kit Pose Android](https://developers.google.com/ml-kit/vision/pose-detection/android)：端侧关键点与置信度；仍为 Beta。
 - [AGP 8.9 兼容信息](https://developer.android.com/build/releases/agp-8-9-0-release-notes)：Gradle 8.11.1、JDK 17、API 35。
+- [Android DataSpace](https://developer.android.com/reference/android/hardware/DataSpace#RANGE_LIMITED)：8 位有限范围 Y 的白色可位于 235。本应用的亮区阈值兼顾该情况，但没有逐机型读取与校准所有色彩范围，因此仍然是预览检查启发式。
