@@ -9,6 +9,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
@@ -39,7 +40,7 @@ class CameraSmokeTest {
                     Thread.sleep(200)
                 }
                 assertTrue("Camera preview must reach STREAMING", streaming.get())
-                onView(withText("●  拍照")).perform(click())
+                onView(withId(R.id.shutter)).perform(click())
                 val saveDeadline = SystemClock.elapsedRealtime() + 15000
                 var saved = photoIds() - before
                 while (saved.isEmpty() && SystemClock.elapsedRealtime() < saveDeadline) { Thread.sleep(300); saved = photoIds() - before }

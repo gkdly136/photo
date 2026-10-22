@@ -11,7 +11,7 @@ class CoachTest {
         val guidance = advise(Observation(light))
         assertTrue(guidance.tips.any { it.evidence.contains("尚未检测到") })
         assertTrue(guidance.tips.any { it.evidence.contains("通用模板") })
-        assertNotNull(guidance.target)
+        assertNull(guidance.target)
     }
     @Test fun lowConfidenceJointsNeverTriggerArmsDownInstruction() {
         val body = Body(mapOf(Joint.LEFT_WRIST to Point(.3f, .8f, .1f), Joint.RIGHT_WRIST to Point(.6f, .8f, .1f), Joint.LEFT_HIP to Point(.4f, .6f), Joint.RIGHT_HIP to Point(.5f, .6f)))
@@ -30,7 +30,8 @@ class CoachTest {
         assertTrue(guidance.tips.first { it.category == "构图" }.instruction.contains("向左"))
     }
     @Test fun centerLayoutIsAnAlternativeToThirds() {
-        assertEquals(.5f, advise(Observation(light), layout = Layout.CENTER).target!!.x)
+        val face = Face(Point(.3f, .3f), .1f, .1f, 0f, null)
+        assertEquals(.5f, advise(Observation(light, listOf(face)), layout = Layout.CENTER).target!!.x)
     }
     @Test fun horizontalAlignmentAloneDoesNotClaimVerticalAlignment() {
         val face = Face(Point(1f / 3, .8f), .1f, .1f, 0f, null)
@@ -66,5 +67,22 @@ class CoachTest {
                 assertTrue(it.instruction.isNotBlank()); assertTrue(it.evidence.isNotBlank()); assertTrue(it.sourceIds.isNotEmpty())
             }
         }
+    }
+
+    @Test fun normalLightDoesNotBuryCompositionUnderGenericAdvice() {
+        assertEquals("构图", advise(Observation(light)).tips.first().category)
+        assertEquals(TipBasis.CREATIVE, advise(Observation(light)).tips.first().basis)
+    }
+
+    @Test fun measuredAbnormalLightTakesPriority() {
+        val tip = advise(Observation(Light(.8f, 0f, .2f))).tips.first()
+        assertEquals("光线", tip.category); assertEquals(TipBasis.MEASURED, tip.basis)
+    }
+
+    @Test fun depthPortraitDoesNotInventAPreciseSubjectLocation() {
+        val face = Face(Point(.7f, .3f), .1f, .1f, 0f, null)
+        val guidance = advise(Observation(light, listOf(face)), layout = Layout.DEPTH)
+        assertNull(guidance.target)
+        assertEquals(TipBasis.CREATIVE, guidance.tips.first { it.category == "构图" }.basis)
     }
 }

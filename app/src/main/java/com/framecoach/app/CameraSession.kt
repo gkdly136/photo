@@ -161,7 +161,18 @@ class CameraSession(
                 val value = (buffer.get(base + py * plane.rowStride + px * plane.pixelStride).toInt() and 255) / 255f
                 all.add(value)
                 // Use the frame border for portrait stability so the subject can move at the center.
-                if (!ignorePerson || x < 7 || x >= 41 || y < 5 || y >= 31) background.add(value)
+                if (!ignorePerson || x < 7 || x >= 41 || y < 5 || y >= 31) {
+                    // Average a cell-sized neighborhood; single pixels exaggerate subpixel tremor.
+                    val radiusX = (crop.width() / 96).coerceAtLeast(1)
+                    val radiusY = (crop.height() / 72).coerceAtLeast(1)
+                    var total = 0f
+                    for (oy in -1..1) for (ox in -1..1) {
+                        val sx = (px + ox * radiusX).coerceIn(crop.left, crop.right - 1)
+                        val sy = (py + oy * radiusY).coerceIn(crop.top, crop.bottom - 1)
+                        total += (buffer.get(base + sy * plane.rowStride + sx * plane.pixelStride).toInt() and 255) / 255f
+                    }
+                    background.add(total / 9f)
+                }
             }
             return FrameReading(background.toFloatArray(), PreviewLight.fromLuma(all.toFloatArray()), now)
         }

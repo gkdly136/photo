@@ -1,10 +1,10 @@
 <resources>
     <style name="Theme.FrameCoach" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#D6F586</item>
+        <item name="android:colorAccent">#EBC697</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:windowBackground">#101310</item>
+        <item name="android:windowBackground">#111315</item>
     </style>
 </resources>

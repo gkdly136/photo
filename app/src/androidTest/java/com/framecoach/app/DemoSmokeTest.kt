@@ -21,19 +21,38 @@ class DemoSmokeTest {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             onView(withText("演示场景 · 非实时识别")).check(matches(isDisplayed()))
             // Dwell is deliberately a real-time user behavior, independent of Espresso idling.
-            Thread.sleep(2600)
+            Thread.sleep(3100)
             onView(withText("演示建议已就绪 · 开启相机试试")).check(matches(isDisplayed()))
             screenshot("portrait.png")
             onView(withText("风光")).perform(click())
-            Thread.sleep(2600)
+            Thread.sleep(3100)
             onView(withText(containsString("先决定天空"))).check(matches(isDisplayed()))
             screenshot("landscape.png")
             scenario.recreate()
             onView(withText("演示场景 · 非实时识别")).check(matches(isDisplayed()))
-            onView(withText("辅助线 开")).perform(click())
-            onView(withText("辅助线 关")).check(matches(isDisplayed()))
-            onView(withText("●  拍照")).perform(click())
+            onView(withId(R.id.settings)).perform(click())
+            onView(withText("辅助线：开")).perform(click())
+            scenario.onActivity { assertTrue(it.findViewById<android.view.View>(R.id.shutter).isEnabled) }
+            onView(withId(R.id.assist_now)).perform(click())
+            onView(withId(R.id.assist_status)).check(matches(withText("演示 · 已手动请求辅助")))
+            onView(withId(R.id.shutter)).perform(click())
             // Demo never writes a synthetic image into the user's gallery.
+        }
+    }
+
+    @Test fun guidanceCategoriesAndLandscapeLayoutRemainUsable() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            Thread.sleep(400)
+            onView(withId(R.id.assist_now)).perform(click())
+            onView(withText("动作")).perform(click())
+            onView(withText("给手一个自然的落点")).check(matches(isDisplayed()))
+            onView(withText("表情")).perform(click())
+            onView(withText("像和朋友聊天一样")).check(matches(isDisplayed()))
+            scenario.onActivity { it.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+            Thread.sleep(800)
+            onView(withId(R.id.assist_now)).perform(click())
+            onView(withId(R.id.shutter)).check(matches(isDisplayed()))
+            screenshot("horizontal.png")
         }
     }
 

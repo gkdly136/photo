@@ -11,9 +11,10 @@ class GuideOverlay(context: Context) : View(context) {
     var guidance: Guidance? = null
     var body: Body? = null
     var showGuides = true
+    var showBody = false
     var landscape = false
     var onHorizon: ((Float) -> Unit)? = null
-    private val lime = Color.rgb(214, 245, 134)
+    private val lime = Color.rgb(235, 198, 151)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val density = resources.displayMetrics.density
 
@@ -22,7 +23,7 @@ class GuideOverlay(context: Context) : View(context) {
         if (!showGuides) return
         val w = width.toFloat(); val h = height.toFloat()
         paint.style = Paint.Style.STROKE; paint.strokeWidth = density
-        paint.color = Color.argb(125, 255, 255, 255)
+        paint.color = Color.argb(55, 255, 255, 255)
         when (layout) {
             Layout.THIRDS -> for (i in 1..2) {
                 canvas.drawLine(w * i / 3, 0f, w * i / 3, h, paint)
@@ -40,7 +41,7 @@ class GuideOverlay(context: Context) : View(context) {
         }
         guidance?.target?.let { target ->
             paint.color = lime; paint.strokeWidth = density * 2
-            canvas.drawCircle(target.x * w, target.y * h, 23 * density, paint)
+            canvas.drawCircle(target.x * w, target.y * h, 18 * density, paint)
             canvas.drawLine(target.x * w - 8 * density, target.y * h, target.x * w + 8 * density, target.y * h, paint)
             canvas.drawLine(target.x * w, target.y * h - 8 * density, target.x * w, target.y * h + 8 * density, paint)
         }
@@ -52,8 +53,9 @@ class GuideOverlay(context: Context) : View(context) {
             paint.style = Paint.Style.FILL; paint.textSize = 12 * density
             canvas.drawText("手动标记的水平线", 12 * density, (y * h - 8 * density).coerceAtLeast(20 * density), paint)
         }
+        if (!showBody) return
         val skeleton = body ?: return
-        paint.color = Color.argb(190, 214, 245, 134); paint.strokeWidth = density * 2
+        paint.color = Color.argb(190, 235, 198, 151); paint.strokeWidth = density * 2
         bones.forEach { (a, b) ->
             val start = skeleton.visible(a); val end = skeleton.visible(b)
             if (start != null && end != null) canvas.drawLine(start.x * w, start.y * h, end.x * w, end.y * h, paint)

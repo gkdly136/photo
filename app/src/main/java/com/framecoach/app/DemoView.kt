@@ -3,39 +3,102 @@ package com.framecoach.app
 import android.content.Context
 import android.graphics.*
 import android.view.View
+import kotlin.random.Random
 
-/** Original vector illustration, explicitly labelled as synthetic demo in the UI. */
+/** Original procedural illustration; never presented as a live camera or model result. */
 class DemoView(context: Context) : View(context) {
     var portrait = true
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
-        paint.shader = LinearGradient(0f, 0f, 0f, h, intArrayOf(Color.rgb(139, 164, 153), Color.rgb(215, 216, 182), Color.rgb(56, 83, 70)), null, Shader.TileMode.CLAMP)
+        paint.style = Paint.Style.FILL
+        paint.shader = LinearGradient(0f, 0f, 0f, h,
+            intArrayOf(Color.rgb(81, 110, 125), Color.rgb(173, 184, 174), Color.rgb(209, 188, 154)), null, Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, w, h, paint); paint.shader = null
-        paint.color = Color.argb(180, 242, 229, 174); canvas.drawCircle(w * .78f, h * .22f, w * .095f, paint)
-        mountain(canvas, w, h, .48f, Color.rgb(99, 126, 112), floatArrayOf(0f, .6f, .15f, .2f, .3f, .65f, .45f, .35f, .65f, .9f, 1f, .4f))
-        mountain(canvas, w, h, .64f, Color.rgb(59, 91, 78), floatArrayOf(0f, .3f, .2f, .65f, .38f, .35f, .62f, .8f, .85f, .2f, 1f, .5f))
-        val path = Path().apply { moveTo(w * .58f, h * .66f); cubicTo(w * .4f, h * .76f, w * .83f, h * .83f, w * .45f, h); lineTo(w * .95f, h); cubicTo(w, h * .8f, w * .52f, h * .74f, w * .58f, h * .66f) }
-        paint.color = Color.rgb(165, 184, 154); canvas.drawPath(path, paint)
-        if (portrait) {
-            paint.color = Color.rgb(45, 51, 38)
-            canvas.drawCircle(w * .43f, h * .34f, w * .038f, paint)
-            paint.color = Color.rgb(201, 167, 116)
-            canvas.drawRoundRect(w * .38f, h * .39f, w * .48f, h * .63f, 20f, 20f, paint)
-            paint.color = Color.rgb(44, 53, 46); paint.strokeWidth = w * .035f; paint.strokeCap = Paint.Cap.ROUND
-            canvas.drawLine(w * .405f, h * .61f, w * .39f, h * .84f, paint)
-            canvas.drawLine(w * .455f, h * .61f, w * .49f, h * .83f, paint)
-            paint.color = Color.rgb(201, 167, 116); paint.strokeWidth = w * .028f
-            canvas.drawLine(w * .385f, h * .42f, w * .35f, h * .63f, paint)
-            canvas.drawLine(w * .48f, h * .42f, w * .51f, h * .61f, paint)
+        paint.color = Color.argb(175, 247, 221, 174)
+        canvas.drawCircle(w * .76f, h * .22f, w * .067f, paint)
+
+        ridge(canvas, w, h, Color.rgb(103, 132, 140), floatArrayOf(0f,.46f,.18f,.23f,.38f,.48f,.63f,.28f,.83f,.44f,1f,.35f))
+        ridge(canvas, w, h, Color.rgb(71, 105, 116), floatArrayOf(0f,.57f,.14f,.44f,.34f,.55f,.55f,.39f,.75f,.53f,1f,.46f))
+        paint.shader = LinearGradient(0f, h * .57f, 0f, h,
+            Color.rgb(114, 143, 145), Color.rgb(42, 67, 74), Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, h * .57f, w, h, paint); paint.shader = null
+        val random = Random(93)
+        paint.strokeWidth = 1f
+        repeat(95) {
+            val y = h * (.59f + random.nextFloat() * .4f)
+            val x = random.nextFloat() * w
+            paint.color = Color.argb(20 + random.nextInt(35), 219, 214, 186)
+            canvas.drawLine(x, y, x + w * (.015f + random.nextFloat() * .16f), y, paint)
         }
+        val bank = Path().apply {
+            moveTo(0f, h * .65f); cubicTo(w * .16f, h * .64f, w * .21f, h * .78f, w * .45f, h * .83f)
+            cubicTo(w * .6f, h * .88f, w * .75f, h * .94f, w, h * .98f)
+            lineTo(w, h); lineTo(0f, h); close()
+        }
+        paint.color = Color.rgb(47, 65, 61); canvas.drawPath(bank, paint)
+        // Fir silhouettes frame the open view without implying scene understanding.
+        for (i in 0..8) {
+            val x = w * (i * .027f - .015f)
+            val base = h * (.72f + i * .012f)
+            val height = h * (.19f - i * .012f)
+            tree(canvas, x, base, height, Color.rgb(34, 58, 58))
+        }
+        if (portrait) person(canvas, w, h)
+        // Subtle grain gives the illustration a softer material instead of hard UI shapes.
+        paint.strokeWidth = 1f
+        repeat(1600) {
+            paint.color = Color.argb(13, 244, 236, 217)
+            canvas.drawPoint(random.nextFloat() * w, random.nextFloat() * h, paint)
+        }
+        paint.shader = LinearGradient(0f, 0f, 0f, h,
+            intArrayOf(Color.argb(40, 10, 19, 23), Color.TRANSPARENT, Color.argb(70, 10, 19, 23)),
+            floatArrayOf(0f, .55f, 1f), Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, 0f, w, h, paint); paint.shader = null
     }
-    private fun mountain(canvas: Canvas, w: Float, h: Float, top: Float, color: Int, values: FloatArray) {
+
+    private fun person(canvas: Canvas, w: Float, h: Float) {
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.color = Color.rgb(28, 36, 37); paint.strokeWidth = w * .033f
+        canvas.drawLine(w * .408f, h * .60f, w * .39f, h * .84f, paint)
+        canvas.drawLine(w * .455f, h * .60f, w * .49f, h * .83f, paint)
+        paint.color = Color.rgb(191, 167, 135)
+        val coat = Path().apply {
+            moveTo(w * .395f, h * .395f); quadTo(w * .43f, h * .38f, w * .47f, h * .40f)
+            lineTo(w * .49f, h * .63f); quadTo(w * .44f, h * .65f, w * .375f, h * .63f); close()
+        }
+        canvas.drawPath(coat, paint)
+        paint.color = Color.rgb(172, 147, 117); paint.strokeWidth = w * .026f
+        canvas.drawLine(w * .393f, h * .421f, w * .355f, h * .61f, paint)
+        canvas.drawLine(w * .473f, h * .423f, w * .51f, h * .59f, paint)
+        paint.color = Color.rgb(208, 177, 148); paint.strokeWidth = w * .019f
+        canvas.drawLine(w * .355f, h * .61f, w * .35f, h * .63f, paint)
+        canvas.drawLine(w * .51f, h * .59f, w * .51f, h * .61f, paint)
+        canvas.drawOval(w * .403f, h * .30f, w * .457f, h * .383f, paint)
+        paint.color = Color.rgb(42, 42, 37)
+        val hair = Path().apply {
+            moveTo(w * .403f, h * .35f); cubicTo(w * .38f, h * .28f, w * .48f, h * .28f, w * .456f, h * .352f)
+            lineTo(w * .44f, h * .325f); lineTo(w * .408f, h * .329f); close()
+        }
+        canvas.drawPath(hair, paint)
+        paint.color = Color.argb(80, 91, 75, 57); paint.strokeWidth = w * .004f
+        canvas.drawLine(w * .43f, h * .43f, w * .43f, h * .61f, paint)
+    }
+
+    private fun ridge(canvas: Canvas, w: Float, h: Float, color: Int, points: FloatArray) {
         val path = Path().apply {
             moveTo(0f, h)
-            for (i in values.indices step 2) lineTo(values[i] * w, h * (top + values[i + 1] * .22f))
+            for (i in points.indices step 2) lineTo(points[i] * w, points[i + 1] * h)
             lineTo(w, h); close()
         }
         paint.color = color; canvas.drawPath(path, paint)
     }
+    private fun tree(canvas: Canvas, x: Float, base: Float, height: Float, color: Int) {
+        paint.color = color
+        val path = Path().apply {
+            moveTo(x, base - height); lineTo(x - height * .18f, base); lineTo(x + height * .18f, base); close()
+        }
+        canvas.drawPath(path, paint)
+    }
 }
+
