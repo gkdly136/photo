@@ -11,6 +11,7 @@ class DemoView(context: Context) : View(context) {
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     override fun onDraw(canvas: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
+        paint.alpha = 255
         paint.style = Paint.Style.FILL
         paint.shader = LinearGradient(0f, 0f, 0f, h,
             intArrayOf(Color.rgb(81, 110, 125), Color.rgb(173, 184, 174), Color.rgb(209, 188, 154)), null, Shader.TileMode.CLAMP)
@@ -51,6 +52,7 @@ class DemoView(context: Context) : View(context) {
             paint.color = Color.argb(13, 244, 236, 217)
             canvas.drawPoint(random.nextFloat() * w, random.nextFloat() * h, paint)
         }
+        paint.alpha = 255
         paint.shader = LinearGradient(0f, 0f, 0f, h,
             intArrayOf(Color.argb(40, 10, 19, 23), Color.TRANSPARENT, Color.argb(70, 10, 19, 23)),
             floatArrayOf(0f, .55f, 1f), Shader.TileMode.CLAMP)
