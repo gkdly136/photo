@@ -72,5 +72,6 @@ jobs:
           name: device-smoke-and-screenshots
           path: |
             verification/screenshots/
+            verification/window-state.txt
             app/build/reports/androidTests/
           retention-days: 30
