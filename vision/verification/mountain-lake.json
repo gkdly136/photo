@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "model": "FrameCoach-Vision-0.1",
+  "scene_id": "mountain_lake",
+  "status": "ok",
+  "base_model": "Qwen/Qwen3-VL-2B-Instruct",
+  "base_revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+  "photography_finetuned": false,
+  "image_size": [
+    960,
+    720
+  ],
+  "coordinates": "upright_image_normalized_0_1000",
+  "intent": "landscape",
+  "mood": "natural",
+  "perception": {
+    "setting": "outdoor",
+    "subjects": [
+      {
+        "id": "s1",
+        "kind": "landmark",
+        "box": [
+          0.0,
+          0.0,
+          1000.0,
+          536.0
+        ],
+        "framing": "unknown"
+      },
+      {
+        "id": "s2",
+        "kind": "object",
+        "box": [
+          0.0,
+          536.0,
+          1000.0,
+          1000.0
+        ],
+        "framing": "unknown"
+      }
+    ],
+    "regions": [
+      {
+        "kind": "sky",
+        "box": [
+          0.0,
+          0.0,
+          1000.0,
+          300.0
+        ]
+      },
+      {
+        "kind": "water",
+        "box": [
+          0.0,
+          536.0,
+          1000.0,
+          1000.0
+        ]
+      },
+      {
+        "kind": "vegetation",
+        "box": [
+          0.0,
+          800.0,
+          333.0,
+          1000.0
+        ]
+      },
+      {
+        "kind": "building",
+        "box": [
+          0.0,
+          0.0,
+          1000.0,
+          536.0
+        ]
+      }
+    ],
+    "cues": [],
+    "uncertainties": [
+      "模型将输入识别为插图，该判断可能有误。",
+      "主体与背景均为模型粗略估计；没有校准置信度或姿态诊断。"
+    ]
+  },
+  "guidance": {
+    "planner": "deterministic_photography_rules_v1",
+    "aesthetic_ranker_trained": false,
+    "selected_subject_id": "s1",
+    "plans": [
+      {
+        "id": "environment",
+        "title": "保留环境",
+        "crop": [
+          0,
+          0,
+          1000,
+          1000
+        ],
+        "tips": [
+          {
+            "category": "构图",
+            "instruction": "保留完整画面，比较主角与周围环境的关系。",
+            "evidence": "保留原画幅是可比较的创作方案，不表示模型已经证明它更美。",
+            "basis": "creative_option",
+            "source_ids": [
+              "freeman"
+            ]
+          },
+          {
+            "category": "环境",
+            "instruction": "比较天空与地面或水面，决定这一张更想强调哪一部分。",
+            "evidence": "模型估计了天空及地面/水面的粗略区域；没有自动测量真实水平线。",
+            "basis": "model_hypothesis",
+            "source_ids": [
+              "kelby-landscape"
+            ]
+          },
+          {
+            "category": "观察",
+            "instruction": "观察近处是否有可用于表达层次的元素，再决定是否纳入画面。",
+            "evidence": "环境叙事创作选项；不评价人物情绪，不给物理移动距离。",
+            "basis": "creative_option",
+            "source_ids": [
+              "shore-nature",
+              "moma-context"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "subject",
+        "title": "突出主体",
+        "crop": [
+          0,
+          0,
+          1000,
+          1000
+        ],
+        "tips": [
+          {
+            "category": "构图",
+            "instruction": "主体已接近画面边界，先保留原画幅，检查头顶与脚边。",
+            "evidence": "裁剪框经过几何包含校验；主体框来自视觉模型估计，不是像素级分割。",
+            "basis": "model_geometry",
+            "source_ids": [
+              "freeman"
+            ]
+          },
+          {
+            "category": "观察",
+            "instruction": "先确认你最想保留的景物，再比较两种取景。",
+            "evidence": "没有可靠的已选人物，不给当前姿态诊断。",
+            "basis": "creative_option",
+            "source_ids": [
+              "shore-nature"
+            ]
+          },
+          {
+            "category": "观察",
+            "instruction": "先说出你想留下的形状、光或故事，再决定是否收紧画面。",
+            "evidence": "来自用户氛围选择与创作意图，不是情绪检测结果。",
+            "basis": "creative_option",
+            "source_ids": [
+              "moma-posed",
+              "shore-nature"
+            ]
+          }
+        ]
+      }
+    ],
+    "warnings": [],
+    "uncertainties": [
+      "模型将输入识别为插图，该判断可能有误。",
+      "主体与背景均为模型粗略估计；没有校准置信度或姿态诊断。"
+    ],
+    "geometry_source": "upstream_visual_model_estimate"
+  },
+  "performance": {
+    "device": "cuda:0",
+    "model_load_ms": 11219.3,
+    "inference_ms": 9633.7,
+    "input_tokens": 613,
+    "output_tokens": 252,
+    "decoding": "json_schema_constrained",
+    "peak_cuda_allocated_mib": 4233.6
+  },
+  "raw_model_output": "{\n  \"setting\": \"outdoor\",\n  \"image_type\": \"illustration\",\n  \"subjects\": [\n    {\n      \"id\": \"s1\",\n      \"kind\": \"landmark\",\n      \"box\": [0, 0, 1000, 536]\n    },\n    {\n      \"id\": \"s2\",\n      \"kind\": \"object\",\n      \"box\": [0, 536, 1000, 1000]\n    }\n  ],\n  \"regions\": [\n    {\n      \"kind\": \"sky\",\n      \"box\": [0, 0, 1000, 300]\n    },\n    {\n      \"kind\": \"water\",\n      \"box\": [0, 536, 1000, 1000]\n    },\n    {\n      \"kind\": \"vegetation\",\n      \"box\": [0, 800, 333, 1000]\n    },\n    {\n      \"kind\": \"building\",\n      \"box\": [0, 0, 1000, 536]\n    }\n  ]\n}",
+  "validation_error": null
+}

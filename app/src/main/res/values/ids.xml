@@ -1,0 +1,7 @@
+<resources>
+    <item name="camera_preview" type="id" />
+    <item name="shutter" type="id" />
+    <item name="assist_now" type="id" />
+    <item name="assist_status" type="id" />
+    <item name="settings" type="id" />
+</resources>

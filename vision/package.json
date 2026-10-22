@@ -1,0 +1,8 @@
+{
+  "name": "framecoach-review-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DOM unit tests only; the delivered offline review page has no JS dependencies",
+  "scripts": {"test": "node --test tests/review.test.cjs tests/photo-review.test.cjs"},
+  "devDependencies": {"jsdom": "26.1.0"}
+}
