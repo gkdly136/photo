@@ -1,0 +1,34 @@
+{
+  "dataset_id": "framecoach-review-batch-001",
+  "count": 200,
+  "groups": {
+    "landscape": 100,
+    "portrait": 100
+  },
+  "authors": 140,
+  "licenses": {
+    "CC BY-SA 4.0": 118,
+    "Public domain": 44,
+    "CC BY 4.0": 8,
+    "CC BY-SA 3.0": 24,
+    "CC BY 2.0": 3,
+    "CC BY 3.0": 2,
+    "CC BY-SA 2.0": 1
+  },
+  "valid_model_observations": 199,
+  "flagged_for_review": 31,
+  "human_approved": 0,
+  "training_performed": false,
+  "annotation_status": "machine_drafts_pending_human_review",
+  "python_unit_tests_passed": 35,
+  "synthetic_dom_tests_passed": 6,
+  "image_checksums_verified": 200,
+  "agent_contact_sheet_screening": true,
+  "real_browser_visual_check": "unavailable_local_file_protocol_blocked_by_browser_tool",
+  "peak_cuda_allocated_mib": 4743.1,
+  "failed_observations": [
+    "FC-0117"
+  ],
+  "human_semantic_accuracy_evaluated": false,
+  "downloaded_images_committed_to_git": false
+}

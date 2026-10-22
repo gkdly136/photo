@@ -73,6 +73,7 @@ class QwenObserver:
         started = time.perf_counter()
         self.processor = AutoProcessor.from_pretrained(self.model_dir, local_files_only=True,
                                                        use_fast=False, min_pixels=128 * 128, max_pixels=max_pixels)
+        self.processor.tokenizer.padding_side = "left"
         self.model = Qwen3VLForConditionalGeneration.from_pretrained(
             self.model_dir, local_files_only=True, trust_remote_code=False,
             dtype=torch.bfloat16 if self.device.startswith("cuda") else torch.float32,
@@ -88,7 +89,12 @@ class QwenObserver:
         self.load_ms = round((time.perf_counter() - started) * 1000, 1)
 
     def observe(self, image, max_new_tokens=768):
+        return self.observe_many([image], max_new_tokens)[0]
+
+    def observe_many(self, images, max_new_tokens=768):
         torch = self.torch
+        if not 1 <= len(images) <= 4:
+            raise ValueError("A visual batch must contain 1..4 images")
         if not 128 <= max_new_tokens <= 2048:
             raise ValueError("Generation budget outside supported bounds")
         messages = [{"role": "system", "content": SYSTEM_PROMPT},
@@ -100,23 +106,27 @@ class QwenObserver:
             torch.cuda.synchronize()
         started = time.perf_counter()
         prefix = self.make_prefix(self.tokenizer_data, self.make_parser(OBSERVATION_SCHEMA))
-        inputs = self.processor(text=[text], images=[image], return_tensors="pt").to(self.device)
+        inputs = self.processor(text=[text] * len(images), images=images, padding=True, return_tensors="pt").to(self.device)
         with torch.inference_mode():
             generated = self.model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,
                                             prefix_allowed_tokens_fn=prefix)
         if self.device.startswith("cuda"):
             torch.cuda.synchronize()
         response = generated[:, inputs.input_ids.shape[1]:]
-        raw = self.processor.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
+        decoded = self.processor.batch_decode(response, skip_special_tokens=True, clean_up_tokenization_spaces=False)
         stats = {"device": self.device, "model_load_ms": self.load_ms,
                  "inference_ms": round((time.perf_counter() - started) * 1000, 1),
                  "input_tokens": inputs.input_ids.shape[1], "output_tokens": response.shape[1],
                  "decoding": "json_schema_constrained",
+                 "batch_size": len(images),
                  "peak_cuda_allocated_mib": round(torch.cuda.max_memory_allocated() / 2**20, 1) if self.device.startswith("cuda") else None}
-        try:
-            scene = Scene.from_wire(raw)
-            failure = None
-        except (InvalidObservation, TypeError) as error:
-            scene = None
-            failure = str(error)
-        return scene, raw, stats, failure
+        results = []
+        for index, raw in enumerate(decoded):
+            try:
+                scene = Scene.from_wire(raw)
+                failure = None
+            except (InvalidObservation, TypeError) as error:
+                scene = None
+                failure = str(error)
+            results.append((scene, raw, dict(stats, output_tokens=int((response[index] != self.processor.tokenizer.pad_token_id).sum().item())), failure))
+        return results

@@ -22,3 +22,11 @@ jobs:
         env:
           PYTHONPATH: vision
         run: python -m unittest discover -s vision/tests -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: vision/package-lock.json
+      - run: npm ci --prefix vision --ignore-scripts --no-audit --no-fund
+      - name: Review page DOM tests with synthetic records (no browser or external images)
+        run: npm test --prefix vision

@@ -11,6 +11,8 @@ verification/local-*
 vision/model_store/
 vision/reports/local-*/
 vision/data/private/
+vision/data/batches/
+vision/node_modules/
 vision/adapters/
 **/__pycache__/
 *.pyc
