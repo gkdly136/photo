@@ -104,4 +104,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File vision/scripts/run-windows.p
 
 ## 怎样成为摄影专用模型
 
+当前素材审核已改为神态、构图类别、光影对比、姿态四维标注，使用独立的 `review-v2.html`。可选裁剪研究参考 SACD 的主体条件、多解与人工偏好，过滤近似重复并展示实际裁剪。详见 [标注 v2](PHOTO_ANNOTATION.md) 与 [SACD 研究记录](SACD_NOTES.md)。这不是 SACD 数据训练或 SAC-Net 实现。
+
 下一轮要收集经允许使用的真实场景与同场景比较：用户选择的主体、意图、两套建议、采纳/拒绝原因和实际取景变化。先建立固定评测集，检查主体框、错误提示和建议采纳率，再决定微调视觉观察器、训练方案排序器，或保留原模型。无标签时不进行看似完成训练、实际上无法证明有效的微调。详见 [MODEL_CARD.md](MODEL_CARD.md)。

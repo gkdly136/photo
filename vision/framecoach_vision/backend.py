@@ -92,21 +92,39 @@ class QwenObserver:
         return self.observe_many([image], max_new_tokens)[0]
 
     def observe_many(self, images, max_new_tokens=768):
+        responses = self.generate_json_many(images, SYSTEM_PROMPT, OBSERVATION_SCHEMA,
+                                            ["Describe the visible scene using the required JSON schema."] * len(images),
+                                            max_new_tokens)
+        results = []
+        for raw, stats in responses:
+            try:
+                scene = Scene.from_wire(raw)
+                failure = None
+            except (InvalidObservation, TypeError) as error:
+                scene = None
+                failure = str(error)
+            results.append((scene, raw, stats, failure))
+        return results
+
+    def generate_json_many(self, images, system_prompt, schema, user_prompts, max_new_tokens=768):
         torch = self.torch
         if not 1 <= len(images) <= 4:
             raise ValueError("A visual batch must contain 1..4 images")
+        if len(user_prompts) != len(images):
+            raise ValueError("One image-specific instruction is required per image")
         if not 128 <= max_new_tokens <= 2048:
             raise ValueError("Generation budget outside supported bounds")
-        messages = [{"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": [{"type": "image"},
-                                                   {"type": "text", "text": "Describe the visible scene using the required JSON schema."}]}]
-        text = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        texts = []
+        for prompt in user_prompts:
+            messages = [{"role": "system", "content": system_prompt},
+                        {"role": "user", "content": [{"type": "image"}, {"type": "text", "text": prompt}]}]
+            texts.append(self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True))
         if self.device.startswith("cuda"):
             torch.cuda.reset_peak_memory_stats()
             torch.cuda.synchronize()
         started = time.perf_counter()
-        prefix = self.make_prefix(self.tokenizer_data, self.make_parser(OBSERVATION_SCHEMA))
-        inputs = self.processor(text=[text] * len(images), images=images, padding=True, return_tensors="pt").to(self.device)
+        prefix = self.make_prefix(self.tokenizer_data, self.make_parser(schema))
+        inputs = self.processor(text=texts, images=images, padding=True, return_tensors="pt").to(self.device)
         with torch.inference_mode():
             generated = self.model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,
                                             prefix_allowed_tokens_fn=prefix)
@@ -122,11 +140,5 @@ class QwenObserver:
                  "peak_cuda_allocated_mib": round(torch.cuda.max_memory_allocated() / 2**20, 1) if self.device.startswith("cuda") else None}
         results = []
         for index, raw in enumerate(decoded):
-            try:
-                scene = Scene.from_wire(raw)
-                failure = None
-            except (InvalidObservation, TypeError) as error:
-                scene = None
-                failure = str(error)
-            results.append((scene, raw, dict(stats, output_tokens=int((response[index] != self.processor.tokenizer.pad_token_id).sum().item())), failure))
+            results.append((raw, dict(stats, output_tokens=int((response[index] != self.processor.tokenizer.pad_token_id).sum().item()))))
         return results

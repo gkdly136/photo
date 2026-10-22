@@ -14,5 +14,6 @@ vision/data/private/
 vision/data/batches/
 vision/node_modules/
 vision/adapters/
+vision/research/local-*/
 **/__pycache__/
 *.pyc
