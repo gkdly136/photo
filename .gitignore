@@ -8,3 +8,9 @@ local.properties
 *.keystore
 captures/
 verification/local-*
+vision/model_store/
+vision/reports/local-*/
+vision/data/private/
+vision/adapters/
+**/__pycache__/
+*.pyc

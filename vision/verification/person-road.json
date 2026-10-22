@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "model": "FrameCoach-Vision-0.1",
+  "scene_id": "person_road",
+  "status": "ok",
+  "base_model": "Qwen/Qwen3-VL-2B-Instruct",
+  "base_revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+  "photography_finetuned": false,
+  "image_size": [
+    960,
+    720
+  ],
+  "coordinates": "upright_image_normalized_0_1000",
+  "intent": "subject",
+  "mood": "natural",
+  "perception": {
+    "setting": "outdoor",
+    "subjects": [
+      {
+        "id": "s1",
+        "kind": "person",
+        "box": [
+          534.0,
+          338.0,
+          666.0,
+          815.0
+        ],
+        "framing": "unknown"
+      }
+    ],
+    "regions": [
+      {
+        "kind": "road",
+        "box": [
+          138.0,
+          426.0,
+          875.0,
+          1000.0
+        ]
+      },
+      {
+        "kind": "vegetation",
+        "box": [
+          0.0,
+          183.0,
+          200.0,
+          571.0
+        ]
+      },
+      {
+        "kind": "vegetation",
+        "box": [
+          731.0,
+          191.0,
+          1000.0,
+          625.0
+        ]
+      },
+      {
+        "kind": "sky",
+        "box": [
+          0.0,
+          0.0,
+          1000.0,
+          426.0
+        ]
+      }
+    ],
+    "cues": [],
+    "uncertainties": [
+      "模型将输入识别为照片，该判断可能有误。",
+      "主体与背景均为模型粗略估计；没有校准置信度或姿态诊断。"
+    ]
+  },
+  "guidance": {
+    "planner": "deterministic_photography_rules_v1",
+    "aesthetic_ranker_trained": false,
+    "selected_subject_id": "s1",
+    "plans": [
+      {
+        "id": "subject",
+        "title": "突出主体",
+        "crop": [
+          301.88,
+          278.38,
+          898.12,
+          874.62
+        ],
+        "tips": [
+          {
+            "category": "构图",
+            "instruction": "参考框保留已识别主体，比较收紧画面后是否更突出主角。",
+            "evidence": "裁剪框经过几何包含校验；主体框来自视觉模型估计，不是像素级分割。",
+            "basis": "model_geometry",
+            "source_ids": [
+              "freeman"
+            ]
+          },
+          {
+            "category": "动作",
+            "instruction": "肩膀放松，轻轻呼气；试一个自己舒服的微侧身版本。",
+            "evidence": "按用户选择的氛围提供可选动作；视觉模型没有测量关节角度，也没有识别情绪。",
+            "basis": "creative_option",
+            "source_ids": [
+              "nikon-background",
+              "moma-posed"
+            ]
+          },
+          {
+            "category": "表情",
+            "instruction": "像和朋友聊天一样，呼气后看向镜头旁。",
+            "evidence": "来自用户氛围选择与创作意图，不是情绪检测结果。",
+            "basis": "creative_option",
+            "source_ids": [
+              "moma-posed",
+              "shore-nature"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "environment",
+        "title": "保留环境",
+        "crop": [
+          0,
+          0,
+          1000,
+          1000
+        ],
+        "tips": [
+          {
+            "category": "构图",
+            "instruction": "保留完整画面，比较主角与周围环境的关系。",
+            "evidence": "保留原画幅是可比较的创作方案，不表示模型已经证明它更美。",
+            "basis": "creative_option",
+            "source_ids": [
+              "freeman"
+            ]
+          },
+          {
+            "category": "环境",
+            "instruction": "观察道路边线是否自然引向主角；适合时把它作为视觉线索。",
+            "evidence": "模型估计画面含道路；道路框不代表精确引导线或可行走路线。",
+            "basis": "model_hypothesis",
+            "source_ids": [
+              "freeman"
+            ]
+          },
+          {
+            "category": "动作",
+            "instruction": "保持舒适姿态，试着望向画面内的景物，让目光与环境发生联系。",
+            "evidence": "环境叙事创作选项；不评价人物情绪，不给物理移动距离。",
+            "basis": "creative_option",
+            "source_ids": [
+              "shore-nature",
+              "moma-context"
+            ]
+          }
+        ]
+      }
+    ],
+    "warnings": [],
+    "uncertainties": [
+      "模型将输入识别为照片，该判断可能有误。",
+      "主体与背景均为模型粗略估计；没有校准置信度或姿态诊断。"
+    ],
+    "geometry_source": "upstream_visual_model_estimate"
+  },
+  "performance": {
+    "device": "cuda:0",
+    "model_load_ms": 11219.3,
+    "inference_ms": 8692.9,
+    "input_tokens": 613,
+    "output_tokens": 216,
+    "decoding": "json_schema_constrained",
+    "peak_cuda_allocated_mib": 4233.3
+  },
+  "raw_model_output": "{\n  \"setting\": \"outdoor\",\n  \"image_type\": \"photograph\",\n  \"subjects\": [\n    {\n      \"id\": \"s1\",\n      \"kind\": \"person\",\n      \"box\": [534, 338, 666, 815]\n    }\n  ],\n  \"regions\": [\n    {\n      \"kind\": \"road\",\n      \"box\": [138, 426, 875, 1000]\n    },\n    {\n      \"kind\": \"vegetation\",\n      \"box\": [0, 183, 200, 571]\n    },\n    {\n      \"kind\": \"vegetation\",\n      \"box\": [731, 191, 1000, 625]\n    },\n    {\n      \"kind\": \"sky\",\n      \"box\": [0, 0, 1000, 426]\n    }\n  ]\n}",
+  "validation_error": null
+}

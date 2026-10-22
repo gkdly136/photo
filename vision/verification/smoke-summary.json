@@ -1,0 +1,83 @@
+{
+  "scope": "synthetic_engineering_smoke_only_not_photography_benchmark",
+  "base_model": "Qwen/Qwen3-VL-2B-Instruct",
+  "revision": "89644892e4d85e24eaac8bacfd4f463576704203",
+  "photography_finetuned": false,
+  "python": "3.11.13",
+  "torch": "2.7.1+cu118",
+  "transformers": "4.57.6",
+  "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+  "cases": [
+    {
+      "name": "person_road",
+      "structured_output_valid": true,
+      "person_presence_correct": true,
+      "required_background_present": true,
+      "unexpected_background_labels": [],
+      "detected_people": 1,
+      "regions": [
+        "road",
+        "vegetation",
+        "vegetation",
+        "sky"
+      ],
+      "performance": {
+        "device": "cuda:0",
+        "model_load_ms": 11219.3,
+        "inference_ms": 8692.9,
+        "input_tokens": 613,
+        "output_tokens": 216,
+        "decoding": "json_schema_constrained",
+        "peak_cuda_allocated_mib": 4233.3
+      },
+      "validation_error": null
+    },
+    {
+      "name": "mountain_lake",
+      "structured_output_valid": true,
+      "person_presence_correct": true,
+      "required_background_present": true,
+      "unexpected_background_labels": [
+        "building"
+      ],
+      "detected_people": 0,
+      "regions": [
+        "sky",
+        "water",
+        "vegetation",
+        "building"
+      ],
+      "performance": {
+        "device": "cuda:0",
+        "model_load_ms": 11219.3,
+        "inference_ms": 9633.7,
+        "input_tokens": 613,
+        "output_tokens": 252,
+        "decoding": "json_schema_constrained",
+        "peak_cuda_allocated_mib": 4233.6
+      },
+      "validation_error": null
+    },
+    {
+      "name": "blank",
+      "structured_output_valid": true,
+      "person_presence_correct": true,
+      "required_background_present": true,
+      "unexpected_background_labels": [],
+      "detected_people": 0,
+      "regions": [],
+      "performance": {
+        "device": "cuda:0",
+        "model_load_ms": 11219.3,
+        "inference_ms": 1106.1,
+        "input_tokens": 613,
+        "output_tokens": 28,
+        "decoding": "json_schema_constrained",
+        "peak_cuda_allocated_mib": 4233.6
+      },
+      "validation_error": null
+    }
+  ],
+  "passed": false,
+  "evaluation_mode": "saved_real_inference_outputs"
+}

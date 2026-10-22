@@ -1,0 +1,24 @@
+name: Vision contract and pipeline tests
+on:
+  push:
+    branches: [main]
+    paths: ['vision/**', '.github/workflows/vision.yml']
+  pull_request:
+    paths: ['vision/**', '.github/workflows/vision.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install 'Pillow>=11,<13'
+      - name: Geometry, scene cancellation and pipeline tests (no neural weights)
+        env:
+          PYTHONPATH: vision
+        run: python -m unittest discover -s vision/tests -v
