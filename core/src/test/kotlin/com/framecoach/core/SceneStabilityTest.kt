@@ -76,7 +76,9 @@ class SceneStabilityTest {
             val sign = if (time / 20 % 2 == 0L) 1f else -1f
             val speed = gyro.update(sign * .16f, sign * .1f, 0f, time)
             if (time % 200L == 0L) {
-                val frame = FloatArray(scene.size) { scene[it] + sign * .025f * if (it % 2 == 0) 1f else -1f }
+                // Image frames arrive slower than sensor events: alternate on the frame clock.
+                val frameSign = if (time / 200 % 2 == 0L) 1f else -1f
+                val frame = FloatArray(scene.size) { scene[it] + frameSign * .025f * if (it % 2 == 0) 1f else -1f }
                 val state = gate.update(frame, speed, time)
                 assertFalse(state.moving)
                 if (state.triggered) enteredAt = time
