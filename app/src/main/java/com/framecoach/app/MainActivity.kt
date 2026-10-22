@@ -417,14 +417,15 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private fun demoObservation(): Observation {
         if (mode == SceneMode.LANDSCAPE) return Observation(Light(.5f, .1f, .02f))
-        return Observation(Light(.5f, .1f, .02f), listOf(Face(Point(.43f, .34f), .08f, .10f, 0f, null)), Body(mapOf(
+        val scale = if (demoView.width > 0) minOf(demoView.width, demoView.height).toFloat() / demoView.width else 1f
+        return Observation(Light(.5f, .1f, .02f), listOf(Face(Point(.43f, .34f), .08f * scale, .10f, 0f, null)), Body(mapOf(
             Joint.LEFT_SHOULDER to Point(.385f, .42f), Joint.RIGHT_SHOULDER to Point(.48f, .42f),
             Joint.LEFT_ELBOW to Point(.365f, .53f), Joint.RIGHT_ELBOW to Point(.5f, .51f),
             Joint.LEFT_WRIST to Point(.35f, .63f), Joint.RIGHT_WRIST to Point(.51f, .61f),
             Joint.LEFT_HIP to Point(.405f, .61f), Joint.RIGHT_HIP to Point(.455f, .61f),
             Joint.LEFT_KNEE to Point(.397f, .73f), Joint.RIGHT_KNEE to Point(.475f, .73f),
             Joint.LEFT_ANKLE to Point(.39f, .84f), Joint.RIGHT_ANKLE to Point(.49f, .83f)
-        )))
+        ).mapValues { (_, point) -> point.copy(x = .43f + (point.x - .43f) * scale) }))
     }
     private fun row() = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
     private fun label(value: String, size: Float, color: Int) = TextView(this).apply {
@@ -432,6 +433,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     }
     private fun button(value: String, action: (View) -> Unit) = Button(this).apply {
         text = value; textSize = 12f; isAllCaps = false; setTextColor(muted)
+        stateListAnimator = null; elevation = 0f
         background = rounded(ink); setPadding(dp(5), 0, dp(5), 0); minimumWidth = 0; minWidth = 0
         setOnClickListener(action)
     }

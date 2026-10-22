@@ -58,31 +58,33 @@ class DemoView(context: Context) : View(context) {
     }
 
     private fun person(canvas: Canvas, w: Float, h: Float) {
+        val unit = minOf(w, h)
+        fun x(value: Float) = w * .43f + (value - .43f) * unit
         paint.strokeCap = Paint.Cap.ROUND
-        paint.color = Color.rgb(28, 36, 37); paint.strokeWidth = w * .033f
-        canvas.drawLine(w * .408f, h * .60f, w * .39f, h * .84f, paint)
-        canvas.drawLine(w * .455f, h * .60f, w * .49f, h * .83f, paint)
+        paint.color = Color.rgb(28, 36, 37); paint.strokeWidth = unit * .033f
+        canvas.drawLine(x(.408f), h * .60f, x(.39f), h * .84f, paint)
+        canvas.drawLine(x(.455f), h * .60f, x(.49f), h * .83f, paint)
         paint.color = Color.rgb(191, 167, 135)
         val coat = Path().apply {
-            moveTo(w * .395f, h * .395f); quadTo(w * .43f, h * .38f, w * .47f, h * .40f)
-            lineTo(w * .49f, h * .63f); quadTo(w * .44f, h * .65f, w * .375f, h * .63f); close()
+            moveTo(x(.395f), h * .395f); quadTo(x(.43f), h * .38f, x(.47f), h * .40f)
+            lineTo(x(.49f), h * .63f); quadTo(x(.44f), h * .65f, x(.375f), h * .63f); close()
         }
         canvas.drawPath(coat, paint)
-        paint.color = Color.rgb(172, 147, 117); paint.strokeWidth = w * .026f
-        canvas.drawLine(w * .393f, h * .421f, w * .355f, h * .61f, paint)
-        canvas.drawLine(w * .473f, h * .423f, w * .51f, h * .59f, paint)
-        paint.color = Color.rgb(208, 177, 148); paint.strokeWidth = w * .019f
-        canvas.drawLine(w * .355f, h * .61f, w * .35f, h * .63f, paint)
-        canvas.drawLine(w * .51f, h * .59f, w * .51f, h * .61f, paint)
-        canvas.drawOval(w * .403f, h * .30f, w * .457f, h * .383f, paint)
+        paint.color = Color.rgb(172, 147, 117); paint.strokeWidth = unit * .026f
+        canvas.drawLine(x(.393f), h * .421f, x(.355f), h * .61f, paint)
+        canvas.drawLine(x(.473f), h * .423f, x(.51f), h * .59f, paint)
+        paint.color = Color.rgb(208, 177, 148); paint.strokeWidth = unit * .019f
+        canvas.drawLine(x(.355f), h * .61f, x(.35f), h * .63f, paint)
+        canvas.drawLine(x(.51f), h * .59f, x(.51f), h * .61f, paint)
+        canvas.drawOval(x(.403f), h * .30f, x(.457f), h * .383f, paint)
         paint.color = Color.rgb(42, 42, 37)
         val hair = Path().apply {
-            moveTo(w * .403f, h * .35f); cubicTo(w * .38f, h * .28f, w * .48f, h * .28f, w * .456f, h * .352f)
-            lineTo(w * .44f, h * .325f); lineTo(w * .408f, h * .329f); close()
+            moveTo(x(.403f), h * .35f); cubicTo(x(.38f), h * .28f, x(.48f), h * .28f, x(.456f), h * .352f)
+            lineTo(x(.44f), h * .325f); lineTo(x(.408f), h * .329f); close()
         }
         canvas.drawPath(hair, paint)
-        paint.color = Color.argb(80, 91, 75, 57); paint.strokeWidth = w * .004f
-        canvas.drawLine(w * .43f, h * .43f, w * .43f, h * .61f, paint)
+        paint.color = Color.argb(80, 91, 75, 57); paint.strokeWidth = unit * .004f
+        canvas.drawLine(x(.43f), h * .43f, x(.43f), h * .61f, paint)
     }
 
     private fun ridge(canvas: Canvas, w: Float, h: Float, color: Int, points: FloatArray) {

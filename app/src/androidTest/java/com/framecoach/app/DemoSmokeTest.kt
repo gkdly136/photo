@@ -42,14 +42,15 @@ class DemoSmokeTest {
 
     @Test fun guidanceCategoriesAndLandscapeLayoutRemainUsable() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            Thread.sleep(400)
+            // Let the previous test's long demo toast finish before visual QA.
+            Thread.sleep(3800)
             onView(withId(R.id.assist_now)).perform(click())
             onView(withText("动作")).perform(click())
             onView(withText("给手一个自然的落点")).check(matches(isDisplayed()))
             onView(withText("表情")).perform(click())
             onView(withText("像和朋友聊天一样")).check(matches(isDisplayed()))
             scenario.onActivity { it.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
-            Thread.sleep(800)
+            Thread.sleep(1800)
             onView(withId(R.id.assist_now)).perform(click())
             onView(withId(R.id.shutter)).check(matches(isDisplayed()))
             screenshot("horizontal.png")
