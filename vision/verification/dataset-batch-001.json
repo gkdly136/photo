@@ -20,8 +20,8 @@
   "human_approved": 0,
   "training_performed": false,
   "annotation_status": "machine_drafts_pending_human_review",
-  "python_unit_tests_passed": 35,
-  "synthetic_dom_tests_passed": 6,
+  "python_unit_tests_passed": 37,
+  "synthetic_dom_tests_passed": 7,
   "image_checksums_verified": 200,
   "agent_contact_sheet_screening": true,
   "real_browser_visual_check": "unavailable_local_file_protocol_blocked_by_browser_tool",
@@ -30,5 +30,9 @@
     "FC-0117"
   ],
   "human_semantic_accuracy_evaluated": false,
-  "downloaded_images_committed_to_git": false
+  "downloaded_images_committed_to_git": false,
+  "embedded_previews_decoded": 200,
+  "preview_max_edge": 960,
+  "review_images_depend_on_external_paths": false,
+  "original_photos_unchanged": true
 }
