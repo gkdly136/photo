@@ -1,0 +1,25 @@
+<resources>
+    <item name="camera_preview" type="id" />
+    <item name="shutter" type="id" />
+    <item name="assist_now" type="id" />
+    <item name="assist_status" type="id" />
+    <item name="settings" type="id" />
+    <item name="pose_library" type="id" />
+    <item name="pose_status" type="id" />
+    <item name="pose_count" type="id" />
+    <item name="pose_clear" type="id" />
+    <item name="pose_lock" type="id" />
+    <item name="pose_posture" type="id" />
+    <item name="pose_framing" type="id" />
+    <item name="pose_view" type="id" />
+    <item name="pose_chair" type="id" />
+    <item name="pose_wall" type="id" />
+    <item name="pose_favorites" type="id" />
+    <item name="shot_intent" type="id" />
+    <item name="shot_title" type="id" />
+    <item name="shot_instruction" type="id" />
+    <item name="shot_done" type="id" />
+    <item name="shot_skip" type="id" />
+    <item name="shot_undo" type="id" />
+    <item name="shot_facts" type="id" />
+</resources>
