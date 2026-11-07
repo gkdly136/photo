@@ -327,7 +327,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             observation, SystemClock.elapsedRealtime(), if (demo) observation.sessionId else camera?.generation ?: -1, horizon)
         val previousPlan = shotPlan
         shotPlan = plan
-        if (previousPlan?.revision != plan.revision || previousPlan.step.id != plan.step.id) {
+        if (previousPlan == null || previousPlan.revision != plan.revision || previousPlan.step.id != plan.step.id) {
             tipScroll.post { tipScroll.scrollTo(0, 0) }
         }
         // Legacy action/expression references remain browsable, but measured framing is owned by the chosen subject.
