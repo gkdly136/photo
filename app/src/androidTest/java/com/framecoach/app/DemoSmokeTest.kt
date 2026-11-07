@@ -53,6 +53,7 @@ class DemoSmokeTest {
             Thread.sleep(1800)
             onView(withId(R.id.assist_now)).perform(click())
             onView(withId(R.id.shutter)).check(matches(isDisplayed()))
+            onView(withId(R.id.shot_instruction)).check(matches(isDisplayed()))
             screenshot("horizontal.png")
         }
     }

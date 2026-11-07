@@ -129,4 +129,10 @@ class ShotCoachTest {
         val p = inspect(ShotCoachSession(), obs(face(), light = Light(.9f, 0f, .8f)).copy(lightAtMs = -1))
         assertNotEquals("light", p.step.id)
     }
+    @Test fun faceBoxAreaKeepsSmallFractionsAndClipsToVisibleViewport() {
+        val small = inspect(ShotCoachSession(), obs(face().copy(width = .08f, height = .1f)))
+        assertTrue(small.facts.any { it.contains("可见人脸框占画面 0.8%") })
+        val clipped = inspect(ShotCoachSession(), obs(face(x = .5f, y = .5f).copy(width = 2f, height = 2f)))
+        assertTrue(clipped.facts.any { it.contains("可见人脸框占画面 100.0%") })
+    }
 }

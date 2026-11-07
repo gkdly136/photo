@@ -1,6 +1,7 @@
 package com.framecoach.core
 
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 enum class ShotIntent(val label: String, val mode: SceneMode) {
     PERSON("突出人物", SceneMode.PORTRAIT), ENVIRONMENT("人物与环境", SceneMode.PORTRAIT),
@@ -76,7 +77,10 @@ class ShotCoachSession {
                 if (automaticId != null && automaticId != face.trackingId) restart()
                 automaticId = face.trackingId
             }
-            facts += "主角：${if (subjectId != null) "手动点选，临时追踪" else "当前单张人脸"}；人脸框占画面 ${(face.width * face.height * 100).toInt()}%"
+            val visibleWidth = (face.center.x + face.width / 2).coerceIn(0f, 1f) - (face.center.x - face.width / 2).coerceIn(0f, 1f)
+            val visibleHeight = (face.center.y + face.height / 2).coerceIn(0f, 1f) - (face.center.y - face.height / 2).coerceIn(0f, 1f)
+            val area = (visibleWidth * visibleHeight * 1000).roundToInt() / 10f
+            facts += "主角：${if (subjectId != null) "手动点选，临时追踪" else "当前单张人脸"}；可见人脸框占画面 $area%"
             facts += "人脸框上缘 ${(100 * (face.center.y - face.height / 2)).toInt()}%；头发边界和视线留白未测量"
         } else {
             facts += "天空、道路与前景：尚未自动识别；水平线由你标记"

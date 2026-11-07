@@ -130,6 +130,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     }
 
     private fun buildScreen() {
+        val wide = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setBackgroundColor(ink) }
         ViewCompat.setOnApplyWindowInsetsListener(root) { view, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -143,7 +144,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         header.addView(brand, LinearLayout.LayoutParams(0, -2, 1f))
         header.addView(button("使用说明") { showKnowledge() }, LinearLayout.LayoutParams(dp(82), dp(48)))
         header.addView(button("设置") { showSettings() }.apply { id = R.id.settings }, LinearLayout.LayoutParams(dp(52), dp(48)))
-        root.addView(header, LinearLayout.LayoutParams(-1, dp(66)))
+        root.addView(header, LinearLayout.LayoutParams(-1, dp(if (wide) 48 else 66)))
 
         val modes = row().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), 0, dp(16), 0) }
         modePortrait = button("人像") { changeMode(SceneMode.PORTRAIT) }
@@ -154,7 +155,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         modes.addView(intentButton, LinearLayout.LayoutParams(0, dp(44), 1f))
         layoutButton = button(composition.label + "  ▾") { chooseLayout() }
         modes.addView(layoutButton, LinearLayout.LayoutParams(dp(110), dp(44)))
-        root.addView(modes, LinearLayout.LayoutParams(-1, dp(52)))
+        root.addView(modes, LinearLayout.LayoutParams(-1, dp(if (wide) 44 else 52)))
         poseBar = row().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), 0, dp(16), 0) }
         poseBar.addView(button("姿势库 · 40") { showPoseLibrary() }.apply { id = R.id.pose_library; setTextColor(lime) }, LinearLayout.LayoutParams(dp(96), dp(48)))
         poseStatus = label("选一个想尝试的动作", 11f, muted).apply { id = R.id.pose_status; maxLines = 2 }
@@ -214,18 +215,18 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             root.addView(middle, LinearLayout.LayoutParams(-1, 0, 1f))
         } else {
             root.addView(stage, LinearLayout.LayoutParams(-1, 0, 1f).apply { setMargins(dp(12), 0, dp(12), dp(10)) })
-            root.addView(advice, LinearLayout.LayoutParams(-1, dp(198)).apply { setMargins(dp(12), 0, dp(12), 0) })
+            root.addView(advice, LinearLayout.LayoutParams(-1, dp(230)).apply { setMargins(dp(12), 0, dp(12), 0) })
         }
 
         val footer = row().apply { gravity = Gravity.CENTER; setPadding(dp(14), dp(6), dp(14), dp(6)) }
         cameraButton = button("开启相机") { if (demo) requestCamera() else showDemo() }
         footer.addView(cameraButton, LinearLayout.LayoutParams(0, dp(60), 1f))
         shutter = ShutterButton(this).apply { id = R.id.shutter; setOnClickListener { capture() } }
-        footer.addView(shutter, LinearLayout.LayoutParams(dp(76), dp(76)).apply { setMargins(dp(18), 0, dp(18), 0) })
+        footer.addView(shutter, LinearLayout.LayoutParams(dp(if (wide) 64 else 76), dp(if (wide) 64 else 76)).apply { setMargins(dp(18), 0, dp(18), 0) })
         footer.addView(button("切换镜头") {
             if (demo) toast("开启相机后可切换前后镜头") else { camera?.flip(); resetAnalysis() }
         }, LinearLayout.LayoutParams(0, dp(60), 1f))
-        root.addView(footer, LinearLayout.LayoutParams(-1, dp(88)))
+        root.addView(footer, LinearLayout.LayoutParams(-1, dp(if (wide) 76 else 88)))
         updateModeUi()
     }
 
@@ -461,7 +462,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         modeLandscape.setTextColor(if (mode == SceneMode.LANDSCAPE) lime else muted)
         modeLandscape.background = rounded(if (mode == SceneMode.LANDSCAPE) panel else ink)
         overlay.landscape = mode == SceneMode.LANDSCAPE; overlay.layout = composition
-        poseBar.visibility = if (mode == SceneMode.PORTRAIT) View.VISIBLE else View.GONE
+        // On short landscape screens the reference remains accessible from the 姿势 tab.
+        poseBar.visibility = if (mode == SceneMode.PORTRAIT && resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE) View.VISIBLE else View.GONE
         intentButton.text = currentIntent().label + " ▾"
     }
     private fun chooseLayout() {
