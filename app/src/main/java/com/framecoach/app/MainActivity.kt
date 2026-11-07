@@ -334,12 +334,14 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             if (poseSession.selected == null) {
                 val candidates = PoseLibrary.recommend(poseSession.conditions, poseOffset, favorites)
                 if (candidates.isEmpty()) tipList.addView(label("当前条件缺少座椅或墙面。打开姿势库修改条件。", 12f, muted))
+                val candidateRow = row()
                 candidates.forEach { card ->
-                    val item = row().apply { gravity = Gravity.CENTER_VERTICAL }
-                    item.addView(PoseSketchView(this, card, poseSession.conditions.view, poseSession.conditions.framing), LinearLayout.LayoutParams(dp(52), dp(74)))
-                    item.addView(button("${card.title}  ·  选为目标") { selectPose(card) }.apply { setTextColor(lime) }, LinearLayout.LayoutParams(0, dp(70), 1f))
-                    tipList.addView(item)
+                    val item = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; background = rounded(Color.rgb(34, 41, 44)); clipToOutline = true }
+                    item.addView(PoseSketchView(this, card, poseSession.conditions.view, poseSession.conditions.framing), LinearLayout.LayoutParams(-1, dp(50)))
+                    item.addView(button(card.title) { selectPose(card) }.apply { setTextColor(lime); textSize = 11f; maxLines = 2 }, LinearLayout.LayoutParams(-1, dp(48)))
+                    candidateRow.addView(item, LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(5) })
                 }
+                if (candidates.isNotEmpty()) tipList.addView(candidateRow)
                 tipList.addView(button("换一组参考") { poseOffset += 3; renderTips() })
             }
             tipList.addView(button(if (poseSession.selected == null) "按条件浏览全部姿势" else "更换姿势 / 查看说明") { showPoseLibrary() })

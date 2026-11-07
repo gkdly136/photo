@@ -24,7 +24,7 @@ class PoseSession {
     private var shownAt = -1L
     private var shown: PoseMatch? = null
     fun ticket() = PoseTicket(scene, targetVersion)
-    fun accepts(ticket: PoseTicket) = ticket == ticket()
+    fun accepts(expected: PoseTicket) = expected == ticket()
     fun setConditions(value: PoseConditions, nowMs: Long) {
         if (conditions == value) return
         conditions = value
@@ -33,7 +33,7 @@ class PoseSession {
     }
     fun select(id: String, nowMs: Long): Boolean {
         val card = PoseLibrary.find(id)?.takeIf { it.eligible(conditions) } ?: return false
-        selected = card; targetVersion++; selectedAt = nowMs; resetFeedback()
+        selected = card; targetVersion++; selectedAt = nowMs; subject = null; resetFeedback()
         return true
     }
     fun clear() { selected = null; scene++; targetVersion++; subject = null; resetFeedback() }

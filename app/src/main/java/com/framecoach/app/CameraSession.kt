@@ -23,6 +23,7 @@ import com.google.mlkit.vision.pose.PoseDetection
 import com.google.mlkit.vision.pose.PoseLandmark
 import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import java.util.concurrent.Executors
+import java.util.concurrent.ConcurrentHashMap
 
 data class FrameReading(val sample: FloatArray, val light: Light, val atMs: Long)
 data class PeopleReading(val faces: List<Face>, val body: Body?, val error: Boolean, val atMs: Long,
@@ -50,10 +51,10 @@ class CameraSession(
     private var lastFrame = 0L
     @Volatile var generation: Long = 0; private set
     private data class Pending(val atMs: Long, val generation: Long, val width: Float, val height: Float)
-    @Volatile private var pending: Pending? = null
-    fun invalidate() { generation++ }
+    private val pending = ConcurrentHashMap<Long, Pending>()
+    fun invalidate() { generation++; pending.clear() }
     private val mlAnalyzer = MlKitAnalyzer(listOf(faces, poses), ImageAnalysis.COORDINATE_SYSTEM_VIEW_REFERENCED, main) { result ->
-        val frame = pending
+        val frame = pending.remove(result.timestamp)
         if (!closed && portrait && frame != null && frame.generation == generation &&
             preview.width.toFloat() == frame.width && preview.height.toFloat() == frame.height) {
             val w = frame.width
@@ -82,7 +83,7 @@ class CameraSession(
             val frameGeneration = generation
             try {
                 val reading = readLuma(image, now, portrait)
-                main.execute { if (!closed) onFrame(reading) }
+                main.execute { if (!closed && frameGeneration == generation) onFrame(reading) }
             } catch (_: Exception) {
                 image.close()
                 main.execute { if (!closed) onError("读取相机画面失败，请重新进入取景。") }
@@ -90,9 +91,10 @@ class CameraSession(
             }
             if (portrait) {
                 // This delegate closes the ImageProxy after both asynchronous detectors finish.
-                // KEEP_ONLY_LATEST permits one delegate frame in flight; its callback owns this token.
+                // Key metadata by the exact camera timestamp, not a mutable "latest frame" slot.
                 if (preview.width <= 0 || preview.height <= 0 || frameGeneration != generation) { image.close(); return }
-                pending = Pending(now, frameGeneration, preview.width.toFloat(), preview.height.toFloat())
+                pending.entries.removeIf { now - it.value.atMs > 3000 || it.value.generation != generation }
+                pending[image.imageInfo.timestamp] = Pending(now, frameGeneration, preview.width.toFloat(), preview.height.toFloat())
                 mlAnalyzer.analyze(image)
             } else image.close()
         }
@@ -143,7 +145,7 @@ class CameraSession(
     }
 
     fun close() {
-        closed = true
+        closed = true; invalidate()
         controller.clearImageAnalysisAnalyzer()
         controller.unbind()
         preview.controller = null

@@ -42,7 +42,7 @@ class PoseLibrarySmokeTest {
     }
 
     @Test fun requiredChairAndFavoritesRemainExplicitInTheLibrary() {
-        ActivityScenario.launch(MainActivity::class.java).use {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             onView(withId(R.id.pose_library)).perform(click())
             onView(withId(R.id.pose_posture)).perform(click()); onData(equalTo("坐姿")).perform(click())
             onView(withId(R.id.pose_count)).check(matches(withText(containsString("符合条件 0 / 40"))))
@@ -52,6 +52,11 @@ class PoseLibrarySmokeTest {
             onView(withId(R.id.pose_favorites)).perform(click())
             onView(withId(R.id.pose_count)).check(matches(withText(containsString("符合条件 1 / 40"))))
             screenshot("pose-filters.png")
+            onView(withText("返回取景")).perform(click())
+            scenario.recreate()
+            onView(withId(R.id.pose_library)).perform(click())
+            onView(withId(R.id.pose_favorites)).perform(click())
+            onView(withId(R.id.pose_count)).check(matches(withText(containsString("符合条件 1 / 40"))))
             onView(withContentDescription("坐姿双手放膝，已收藏")).perform(click())
             onView(withId(R.id.pose_count)).check(matches(withText(containsString("符合条件 0 / 40"))))
         }

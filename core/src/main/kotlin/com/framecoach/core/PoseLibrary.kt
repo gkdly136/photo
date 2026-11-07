@@ -141,6 +141,8 @@ object PoseLibrary {
         val eligible = filtered(conditions, favorites)
         if (eligible.isEmpty()) return emptyList()
         val start = Math.floorMod(offset, eligible.size)
-        return (eligible.drop(start) + eligible.take(start)).take(3)
+        val rotated = eligible.drop(start) + eligible.take(start)
+        val diverse = rotated.distinctBy { setOf(it.leftHand, it.rightHand) }.take(3)
+        return (diverse + rotated.filter { it !in diverse }).take(3)
     }
 }

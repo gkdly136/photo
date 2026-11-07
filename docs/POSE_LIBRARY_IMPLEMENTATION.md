@@ -22,7 +22,7 @@
 
 ## 帧与会话隔离
 
-`CameraSession` 为一次委托检测保留采样时间、视口尺寸及会话版本。换景与重置增加版本，迟到检测结果不能覆盖当前画面；视口尺寸变化也会丢弃旧结果。`PoseSession` 单独管理选择版本、主角跟踪编号、提示的连续帧与冷却。只有姿态匹配自身的状态变化，不重置背景稳定门控。
+`CameraSession` 按相机帧时间戳为一次委托检测保留采样时间、视口尺寸及会话版本，通过 [MlKitAnalyzer.Result.getTimestamp](https://developer.android.com/reference/androidx/camera/mlkit/vision/MlKitAnalyzer.Result#getTimestamp()) 找到对应记录，不读取可被下一帧覆盖的「最新记录」。换景与重置增加版本并清空记录，迟到检测和亮度结果不能覆盖当前画面；视口尺寸变化也会丢弃旧结果。`PoseSession` 单独管理选择版本、主角跟踪编号、提示的连续帧与冷却。只有姿态匹配自身的状态变化，不重置背景稳定门控。
 
 多人场景不把 SDK 的单人骨架分给最大人脸。已观察到的单人跟踪编号改变时清除目标；没有可靠编号时不声称已验证人物身份，用户换主角应重新选择或重新观察。
 
