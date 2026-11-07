@@ -9,6 +9,7 @@ import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.*
+import androidx.test.espresso.matcher.RootMatchers.isPlatformPopup
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import org.hamcrest.CoreMatchers.containsString
@@ -44,7 +45,8 @@ class PoseLibrarySmokeTest {
     @Test fun requiredChairAndFavoritesRemainExplicitInTheLibrary() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             onView(withId(R.id.pose_library)).perform(click())
-            onView(withId(R.id.pose_posture)).perform(click()); onData(equalTo("坐姿")).perform(click())
+            onView(withId(R.id.pose_posture)).perform(click())
+            onData(equalTo("坐姿")).inRoot(isPlatformPopup()).perform(click())
             onView(withId(R.id.pose_count)).check(matches(withText(containsString("符合条件 0 / 40"))))
             onView(withId(R.id.pose_chair)).perform(click())
             onView(withId(R.id.pose_count)).check(matches(withText(containsString("符合条件 12 / 40"))))
