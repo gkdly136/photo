@@ -4,6 +4,7 @@ data class Source(val id: String, val title: String, val url: String, val note: 
 
 object Knowledge {
     val sources = listOf(
+        Source("framecoach-poses", "观景 · 原创姿势卡与手臂对照", "https://github.com/gkdly136/photo/blob/codex/android-framecoach/docs/POSE_LIBRARY_IMPLEMENTATION.md", "40 个原创线稿动作，未使用第三方图库图片、描图或提取骨架。坐姿与靠姿需用户确认条件；只有单人可见手臂参与粗位置比较。线稿未经真实摄影标定，不判断情绪、美观或三维姿态。"),
         Source("shore-nature", "斯蒂芬·肖尔 · 照片的本质", "https://www.phaidon.com/en-us/products/the-nature-of-photographs", "已核对 The Nature of Photographs: A Primer 的 Phaidon 书介，ISBN 9780714859040。用于理解照片与观看的研究方向；未通读全书，不将其简化为三分法评分。"),
         Source("kelby-landscape", "Scott Kelby · 风光摄影公开节选", "https://rockynook.com/article/landscape-recipes/", "已阅读出版社公开的 Landscape Recipes 节选，涉及倒影、前景、天空占比和机位。建议依据为原创概括；不复制原图，也不把单张示例的参数套用到手机。"),
         Source("clements-composition", "本·克莱门茨 / David Rosenfeld · 摄影构图学", "https://search.worldcat.org/title/Photographic-composition/oclc/988073145", "已核对 Photographic composition 的馆藏书目与两位作者，英文原书版权年 1974。中文版本和正文尚待核对；暂不把某条具体规则归因于原书。"),

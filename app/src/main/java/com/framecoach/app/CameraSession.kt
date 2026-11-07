@@ -25,6 +25,8 @@ import com.google.mlkit.vision.pose.defaults.PoseDetectorOptions
 import java.util.concurrent.Executors
 
 data class FrameReading(val sample: FloatArray, val light: Light, val atMs: Long)
+data class PeopleReading(val faces: List<Face>, val body: Body?, val error: Boolean, val atMs: Long,
+                         val aspect: Float, val generation: Long)
 
 /** CameraX owns image lifetimes via MlKitAnalyzer. All public callbacks run on the UI thread. */
 class CameraSession(
@@ -32,7 +34,7 @@ class CameraSession(
     private val owner: LifecycleOwner,
     private val preview: PreviewView,
     private val onFrame: (FrameReading) -> Unit,
-    private val onPeople: (List<Face>, Body?, Boolean) -> Unit,
+    private val onPeople: (PeopleReading) -> Unit,
     private val onError: (String) -> Unit
 ) {
     private val main = ContextCompat.getMainExecutor(context)
@@ -46,19 +48,26 @@ class CameraSession(
     @Volatile private var closed = false
     private var front = false
     private var lastFrame = 0L
+    @Volatile var generation: Long = 0; private set
+    private data class Pending(val atMs: Long, val generation: Long, val width: Float, val height: Float)
+    @Volatile private var pending: Pending? = null
+    fun invalidate() { generation++ }
     private val mlAnalyzer = MlKitAnalyzer(listOf(faces, poses), ImageAnalysis.COORDINATE_SYSTEM_VIEW_REFERENCED, main) { result ->
-        if (!closed && portrait && preview.width > 0 && preview.height > 0) {
-            val w = preview.width.toFloat()
-            val h = preview.height.toFloat()
+        val frame = pending
+        if (!closed && portrait && frame != null && frame.generation == generation &&
+            preview.width.toFloat() == frame.width && preview.height.toFloat() == frame.height) {
+            val w = frame.width
+            val h = frame.height
             val detectedFaces = result.getValue(faces).orEmpty().map { face ->
                 val rect = face.boundingBox
-                Face(Point(rect.exactCenterX() / w, rect.exactCenterY() / h), rect.width() / w, rect.height() / h, face.headEulerAngleY, null)
+                Face(Point(rect.exactCenterX() / w, rect.exactCenterY() / h), rect.width() / w, rect.height() / h, face.headEulerAngleY, null, face.trackingId)
             }.filter { it.center.x in 0f..1f && it.center.y in 0f..1f }
             val pose = result.getValue(poses)
             val joints = jointIds.mapNotNull { (joint, id) ->
                 pose?.getPoseLandmark(id)?.let { joint to Point(it.position.x / w, it.position.y / h, it.inFrameLikelihood) }
             }.toMap()
-            onPeople(detectedFaces, Body(joints).takeIf { joints.isNotEmpty() }, result.getThrowable(faces) != null || result.getThrowable(poses) != null)
+            onPeople(PeopleReading(detectedFaces, Body(joints).takeIf { joints.isNotEmpty() },
+                result.getThrowable(faces) != null || result.getThrowable(poses) != null, frame.atMs, w / h, frame.generation))
         }
     }
     private val analyzer = object : ImageAnalysis.Analyzer {
@@ -70,6 +79,7 @@ class CameraSession(
             val now = SystemClock.elapsedRealtime()
             if (closed || now - lastFrame < 200) { image.close(); return }
             lastFrame = now
+            val frameGeneration = generation
             try {
                 val reading = readLuma(image, now, portrait)
                 main.execute { if (!closed) onFrame(reading) }
@@ -80,6 +90,9 @@ class CameraSession(
             }
             if (portrait) {
                 // This delegate closes the ImageProxy after both asynchronous detectors finish.
+                // KEEP_ONLY_LATEST permits one delegate frame in flight; its callback owns this token.
+                if (preview.width <= 0 || preview.height <= 0 || frameGeneration != generation) { image.close(); return }
+                pending = Pending(now, frameGeneration, preview.width.toFloat(), preview.height.toFloat())
                 mlAnalyzer.analyze(image)
             } else image.close()
         }

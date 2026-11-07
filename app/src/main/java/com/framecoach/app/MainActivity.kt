@@ -45,6 +45,13 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private lateinit var modePortrait: Button
     private lateinit var modeLandscape: Button
     private lateinit var layoutButton: Button
+    private lateinit var poseBar: LinearLayout
+    private lateinit var poseStatus: TextView
+    private val poseSession = PoseSession()
+    private var poseMatch = PoseMatch(PoseMatchState.NONE, "选择一个想尝试的姿势", "")
+    private var poseOffset = 0
+    private var targetEnabled = false
+    private val favorites by lazy { getSharedPreferences("pose-library", MODE_PRIVATE).getStringSet("favorites", emptySet()).orEmpty().toMutableSet() }
     private var selectedCategory: String? = null
     private lateinit var tabs: LinearLayout
     private var manual = false
@@ -88,6 +95,13 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         }
         guidesEnabled = savedInstanceState?.getBoolean("guides", true) ?: true
         bodyEnabled = savedInstanceState?.getBoolean("body", false) ?: false
+        targetEnabled = savedInstanceState?.getBoolean("pose-target", false) ?: false
+        if (savedInstanceState != null) poseSession.setConditions(PoseConditions(
+            posture = Posture.entries.getOrElse(savedInstanceState.getInt("pose-posture")) { Posture.STANDING },
+            framing = Framing.entries.getOrElse(savedInstanceState.getInt("pose-framing")) { Framing.FULL },
+            view = PoseView.entries.getOrElse(savedInstanceState.getInt("pose-view")) { PoseView.FRONT },
+            chair = savedInstanceState.getBoolean("pose-chair"), wall = savedInstanceState.getBoolean("pose-wall"), mood = mood
+        ), SystemClock.elapsedRealtime())
         buildScreen()
         showDemo()
         if (savedInstanceState?.getBoolean("camera") == true && hasPermission()) startCamera()
@@ -97,6 +111,11 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         outState.putString("mode", mode.name); outState.putString("layout", composition.name)
         outState.putString("mood", mood.name); outState.putLong("dwell", dwell); outState.putBoolean("camera", !demo)
         outState.putBoolean("guides", guidesEnabled); outState.putBoolean("body", bodyEnabled)
+        outState.putBoolean("pose-target", targetEnabled)
+        outState.putInt("pose-posture", poseSession.conditions.posture.ordinal)
+        outState.putInt("pose-framing", poseSession.conditions.framing.ordinal)
+        outState.putInt("pose-view", poseSession.conditions.view.ordinal)
+        outState.putBoolean("pose-chair", poseSession.conditions.chair); outState.putBoolean("pose-wall", poseSession.conditions.wall)
         super.onSaveInstanceState(outState)
     }
 
@@ -125,6 +144,11 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         layoutButton = button(composition.label + "  ▾") { chooseLayout() }
         modes.addView(layoutButton, LinearLayout.LayoutParams(dp(110), dp(44)))
         root.addView(modes, LinearLayout.LayoutParams(-1, dp(52)))
+        poseBar = row().apply { gravity = Gravity.CENTER_VERTICAL; setPadding(dp(16), 0, dp(16), 0) }
+        poseBar.addView(button("姿势库 · 40") { showPoseLibrary() }.apply { id = R.id.pose_library; setTextColor(lime) }, LinearLayout.LayoutParams(dp(96), dp(48)))
+        poseStatus = label("选一个想尝试的动作", 11f, muted).apply { id = R.id.pose_status; maxLines = 2 }
+        poseBar.addView(poseStatus, LinearLayout.LayoutParams(0, dp(48), 1f))
+        root.addView(poseBar, LinearLayout.LayoutParams(-1, dp(48)))
 
         val stage = FrameLayout(this).apply {
             background = rounded(Color.BLACK, 22); clipToOutline = true; minimumHeight = dp(100)
@@ -132,7 +156,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         preview = PreviewView(this).apply { id = R.id.camera_preview }
         demoView = DemoView(this)
         overlay = GuideOverlay(this).apply {
-            showGuides = guidesEnabled; showBody = bodyEnabled
+            showGuides = guidesEnabled; showBody = bodyEnabled; showPoseTarget = targetEnabled
             onHorizon = { y -> horizon = y; if (ready) renderTips(); toast("已手动标记水平线") }
         }
         stage.addView(preview, match()); stage.addView(demoView, match()); stage.addView(overlay, match())
@@ -206,17 +230,20 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                     acceptStability(gate.update(reading.sample, gyro, reading.atMs))
                 }
             },
-            onPeople = { faces, body, error ->
+            onPeople = { reading ->
                 if (!demo && started) {
-                    observation = observation.copy(faces = faces, body = body, detectorError = error)
-                    overlay.body = if (mode == SceneMode.PORTRAIT) body else null
+                    observation = observation.copy(faces = reading.faces, body = reading.body, detectorError = reading.error,
+                        atMs = reading.atMs, frameAspect = reading.aspect, sessionId = reading.generation)
+                    overlay.body = if (mode == SceneMode.PORTRAIT) reading.body else null
+                    refreshPose()
                     overlay.invalidate()
                     if (ready && SystemClock.elapsedRealtime() - lastTips > 1200) renderTips()
                 }
             },
             onError = { message -> if (!demo) {
                 ready = false; gate.reset(); horizon = null
-                overlay.guidance = null; overlay.body = null; overlay.invalidate()
+                poseSession.clear(); overlay.poseTarget = null
+                overlay.guidance = null; overlay.body = null; overlay.invalidate(); refreshPose()
                 progress.progress = 0; showWaiting(); status.text = message; toast(message)
             } }
         ).apply { portrait = mode == SceneMode.PORTRAIT; start() }
@@ -239,6 +266,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                 overlay.body = if (mode == SceneMode.PORTRAIT) observation.body else null
                 overlay.invalidate()
             }
+            refreshPose()
             handler.postDelayed(this, 200)
         }
     }
@@ -247,6 +275,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         progress.progress = (state.progress * 100).toInt()
         if (state.moving) {
             horizon = null; manual = false
+            poseSession.clear(); overlay.poseTarget = null; camera?.invalidate()
+            observation = observation.copy(faces = emptyList(), body = null, atMs = -1)
             if (ready) { overlay.guidance = null; overlay.invalidate(); showWaiting() }
             ready = false
             status.text = "正在重新取景 · 停下后自动辅助"
@@ -260,6 +290,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             }
         }
         if (state.triggered || (ready && SystemClock.elapsedRealtime() - lastTips > 2000)) renderTips()
+        refreshPose()
     }
 
     private fun assistNow() {
@@ -271,7 +302,14 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private fun renderTips() {
         if (!ready) return
-        val guidance = Coach.advise(mode, composition, mood, observation, horizon)
+        refreshPose(false)
+        var guidance = Coach.advise(mode, composition, mood, observation, horizon)
+        if (mode == SceneMode.PORTRAIT) {
+            val poseTip = Tip("姿势", poseMatch.title, if (poseSession.selected == null) "先选一个参考动作，或打开姿势库按条件浏览。" else poseMatch.instruction,
+                if (poseMatch.measured) "当前同帧、单人可见手臂与原创二维线稿比较；只判断粗位置，未做摄影质量评分或真机标定。" else "原创动作示意；不代表已识别出当前动作。",
+                listOf("framecoach-poses"), if (poseMatch.measured) TipBasis.MEASURED else TipBasis.CREATIVE)
+            guidance = guidance.copy(tips = listOf(poseTip) + guidance.tips.filterNot { poseSession.selected != null && it.category == "动作" })
+        }
         overlay.guidance = guidance; overlay.invalidate()
         lastTips = SystemClock.elapsedRealtime()
         val categories = guidance.tips.map { it.category }.distinct()
@@ -284,7 +322,30 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             }, LinearLayout.LayoutParams(dp(53), dp(36)).apply { marginEnd = dp(3) })
         }
         tipList.removeAllViews()
-        guidance.tips.filter { it.category == selectedCategory }.forEach { tip ->
+        if (selectedCategory == "姿势") {
+            poseSession.selected?.let { card ->
+                val selectedRow = row().apply { gravity = Gravity.CENTER_VERTICAL }
+                selectedRow.addView(PoseSketchView(this, card, poseSession.conditions.view, poseSession.conditions.framing), LinearLayout.LayoutParams(dp(60), dp(90)))
+                selectedRow.addView(label("${card.title}\n${poseMatch.instruction}", 12f, Color.rgb(221, 226, 231)).apply { setPadding(dp(12), 0, 0, 0) }, LinearLayout.LayoutParams(0, -2, 1f))
+                selectedRow.isClickable = true; selectedRow.isFocusable = true
+                selectedRow.setOnClickListener { showTip(guidance.tips.first { it.category == "姿势" }) }
+                tipList.addView(selectedRow)
+            }
+            if (poseSession.selected == null) {
+                val candidates = PoseLibrary.recommend(poseSession.conditions, poseOffset, favorites)
+                if (candidates.isEmpty()) tipList.addView(label("当前条件缺少座椅或墙面。打开姿势库修改条件。", 12f, muted))
+                candidates.forEach { card ->
+                    val item = row().apply { gravity = Gravity.CENTER_VERTICAL }
+                    item.addView(PoseSketchView(this, card, poseSession.conditions.view, poseSession.conditions.framing), LinearLayout.LayoutParams(dp(52), dp(74)))
+                    item.addView(button("${card.title}  ·  选为目标") { selectPose(card) }.apply { setTextColor(lime) }, LinearLayout.LayoutParams(0, dp(70), 1f))
+                    tipList.addView(item)
+                }
+                tipList.addView(button("换一组参考") { poseOffset += 3; renderTips() })
+            }
+            tipList.addView(button(if (poseSession.selected == null) "按条件浏览全部姿势" else "更换姿势 / 查看说明") { showPoseLibrary() })
+            if (poseSession.selected != null) tipList.addView(button("清除本次目标") { poseSession.clear(); refreshPose(); renderTips() }.apply { id = R.id.pose_clear })
+        }
+        guidance.tips.filter { it.category == selectedCategory && !(selectedCategory == "姿势" && poseSession.selected != null) }.forEach { tip ->
             val card = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL; isClickable = true; isFocusable = true
                 contentDescription = "${tip.basis.label}：${tip.title}。${tip.instruction}。点击查看依据"
@@ -298,11 +359,13 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     }
 
     private fun resetAnalysis() {
+        camera?.invalidate(); poseSession.clear(); overlay.poseTarget = null
         gate.reset(); ready = false; manual = false; selectedCategory = null; horizon = null; progress.progress = 0
         overlay.guidance = null; overlay.body = null; overlay.invalidate()
         observation = if (demo) demoObservation() else Observation(observation.light)
         status.text = "保持取景，等待 ${dwell / 1000} 秒"
         showWaiting()
+        refreshPose()
     }
     private fun showWaiting() {
         tabs.removeAllViews(); tipList.removeAllViews()
@@ -324,6 +387,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         modeLandscape.setTextColor(if (mode == SceneMode.LANDSCAPE) lime else muted)
         modeLandscape.background = rounded(if (mode == SceneMode.LANDSCAPE) panel else ink)
         overlay.landscape = mode == SceneMode.LANDSCAPE; overlay.layout = composition
+        poseBar.visibility = if (mode == SceneMode.PORTRAIT) View.VISIBLE else View.GONE
     }
     private fun chooseLayout() {
         AlertDialog.Builder(this).setTitle("选择你想尝试的构图")
@@ -336,7 +400,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private fun chooseMood() {
         AlertDialog.Builder(this).setTitle("想拍出什么感觉？")
             .setSingleChoiceItems(arrayOf("自然", "安静", "轻快"), mood.ordinal) { dialog, which ->
-                mood = Mood.entries[which]; if (ready) renderTips(); dialog.dismiss()
+                mood = Mood.entries[which]
+                poseSession.setConditions(poseSession.conditions.copy(mood = mood), SystemClock.elapsedRealtime())
+                if (ready) renderTips(); dialog.dismiss()
             }.show()
     }
     private fun showSettings() {
@@ -345,7 +411,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             "辅助线：${if (guidesEnabled) "开" else "关"}",
             "人体关键点：${if (bodyEnabled) "开" else "关"}",
             "人像氛围：${moodLabel()}",
-            "重新观察当前画面"
+            "重新观察当前画面",
+            "目标手臂虚线：${if (targetEnabled) "开" else "关"}"
         )
         AlertDialog.Builder(this).setTitle("取景设置").setItems(options) { _, which ->
             when (which) {
@@ -357,6 +424,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                 2 -> { bodyEnabled = !bodyEnabled; overlay.showBody = bodyEnabled; overlay.invalidate() }
                 3 -> chooseMood()
                 4 -> resetAnalysis()
+                5 -> { targetEnabled = !targetEnabled; overlay.showPoseTarget = targetEnabled; overlay.invalidate() }
             }
         }.setNegativeButton("完成", null).show()
     }
@@ -378,7 +446,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             }.setNegativeButton("关闭", null).show()
     }
     private fun showKnowledge() {
-        AlertDialog.Builder(this).setTitle("观景 · 0.2 试用版")
+        AlertDialog.Builder(this).setTitle("观景 · 0.3 姿势参考试用版")
             .setMessage("稳定取景 → 观察画面 → 尝试建议 → 保存照片\n\n实时帧在本机处理，应用代码不上传照片。不识别身份，不对容貌或情绪打分。只保存你主动拍摄的照片，辅助线不会写进原片。ML Kit 自身的数据实践请见项目隐私说明。\n\n风光水平线由你手动标记；单帧亮度无法确定太阳方向。复杂人群、暗光、遮挡和动态背景会影响检测。\n\n当前支持手机相机，不支持连接单反或微单的实时取景。公开课程和书目用于知识整理，并未读完你提到的所有书籍，也未用获奖作品训练模型。")
             .setPositiveButton("查看知识来源") { _, _ -> chooseSource(Knowledge.sources) }
             .setNeutralButton("辅助逻辑") { _, _ ->
@@ -396,6 +464,31 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         camera?.capture { success ->
             if (!isDestroyed) { capturing = false; shutter.isEnabled = true; toast(if (success) "照片已保存到相册 Pictures/FrameCoach" else "拍摄失败，请检查存储空间后重试") }
         } ?: run { capturing = false; shutter.isEnabled = true }
+    }
+
+    private fun refreshPose(redraw: Boolean = true) {
+        val now = SystemClock.elapsedRealtime()
+        val previous = poseMatch
+        poseMatch = poseSession.update(observation, now, ready && mode == SceneMode.PORTRAIT,
+            if (demo) observation.sessionId else camera?.generation ?: -1)
+        overlay.poseTarget = if (poseMatch.measured) poseMatch.target else null
+        poseStatus.text = poseSession.selected?.let { "已锁定：${it.title}\n${poseMatch.title}" } ?: "选一个想尝试的动作"
+        overlay.invalidate()
+        if (redraw && ready && selectedCategory == "姿势" && (previous.state != poseMatch.state || previous.instruction != poseMatch.instruction)) renderTips()
+    }
+    private fun selectPose(card: PoseCard) {
+        if (poseSession.select(card.id, SystemClock.elapsedRealtime())) {
+            selectedCategory = "姿势"; refreshPose(); if (ready) renderTips()
+            toast("已锁定「${card.title}」，仅供动作参考")
+        }
+    }
+    private fun showPoseLibrary() {
+        PoseLibraryDialog(this, poseSession.conditions, poseSession.selected?.id, favorites,
+            onConditions = { poseSession.setConditions(it, SystemClock.elapsedRealtime()); poseOffset = 0; refreshPose(); if (ready) renderTips() },
+            onChoose = ::selectPose,
+            onClear = { poseSession.clear(); refreshPose(); if (ready) renderTips() },
+            onFavorites = { getSharedPreferences("pose-library", MODE_PRIVATE).edit().putStringSet("favorites", it).apply() }
+        ).show()
     }
 
     override fun onResume() {
@@ -425,7 +518,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             Joint.LEFT_HIP to Point(.405f, .61f), Joint.RIGHT_HIP to Point(.455f, .61f),
             Joint.LEFT_KNEE to Point(.397f, .73f), Joint.RIGHT_KNEE to Point(.475f, .73f),
             Joint.LEFT_ANKLE to Point(.39f, .84f), Joint.RIGHT_ANKLE to Point(.49f, .83f)
-        ).mapValues { (_, point) -> point.copy(x = .43f + (point.x - .43f) * scale) }))
+        ).mapValues { (_, point) -> point.copy(x = .43f + (point.x - .43f) * scale) }),
+            atMs = SystemClock.elapsedRealtime(), frameAspect = if (overlay.height > 0) overlay.width.toFloat() / overlay.height else 1f)
     }
     private fun row() = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
     private fun label(value: String, size: Float, color: Int) = TextView(this).apply {

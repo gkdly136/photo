@@ -10,6 +10,8 @@ class GuideOverlay(context: Context) : View(context) {
     var layout: Layout = Layout.THIRDS
     var guidance: Guidance? = null
     var body: Body? = null
+    var poseTarget: Body? = null
+    var showPoseTarget = false
     var showGuides = true
     var showBody = false
     var landscape = false
@@ -53,17 +55,18 @@ class GuideOverlay(context: Context) : View(context) {
             paint.style = Paint.Style.FILL; paint.textSize = 12 * density
             canvas.drawText("手动标记的水平线", 12 * density, (y * h - 8 * density).coerceAtLeast(20 * density), paint)
         }
-        if (!showBody) return
-        val skeleton = body ?: return
-        paint.color = Color.argb(190, 235, 198, 151); paint.strokeWidth = density * 2
-        bones.forEach { (a, b) ->
-            val start = skeleton.visible(a); val end = skeleton.visible(b)
-            if (start != null && end != null) canvas.drawLine(start.x * w, start.y * h, end.x * w, end.y * h, paint)
+        fun skeleton(value: Body, color: Int, dashed: Boolean) {
+            paint.color = color; paint.strokeWidth = density * 2; paint.style = Paint.Style.STROKE
+            paint.pathEffect = if (dashed) DashPathEffect(floatArrayOf(6 * density, 5 * density), 0f) else null
+            bones.forEach { (a, b) ->
+                val start = value.visible(a); val end = value.visible(b)
+                if (start != null && end != null) canvas.drawLine(start.x * w, start.y * h, end.x * w, end.y * h, paint)
+            }
+            paint.pathEffect = null; paint.style = Paint.Style.FILL
+            value.joints.keys.mapNotNull(value::visible).forEach { canvas.drawCircle(it.x * w, it.y * h, 3 * density, paint) }
         }
-        paint.style = Paint.Style.FILL
-        skeleton.joints.values.filter { it.confidence >= .65f && it.x in 0f..1f && it.y in 0f..1f }.forEach {
-            canvas.drawCircle(it.x * w, it.y * h, 3 * density, paint)
-        }
+        if (showBody) body?.let { skeleton(it, Color.argb(190, 235, 198, 151), false) }
+        if (showPoseTarget) poseTarget?.let { skeleton(it, Color.argb(210, 134, 206, 212), true) }
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
