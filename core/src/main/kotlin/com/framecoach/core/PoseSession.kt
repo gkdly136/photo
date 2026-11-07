@@ -102,10 +102,11 @@ object PoseGeometry {
         val rs = mid(reference.joints.getValue(Joint.LEFT_SHOULDER), reference.joints.getValue(Joint.RIGHT_SHOULDER))
         val rh = mid(reference.joints.getValue(Joint.LEFT_HIP), reference.joints.getValue(Joint.RIGHT_HIP))
         val referenceTorso = rh.y - rs.y
+        val referenceSpan = abs(reference.joints.getValue(Joint.LEFT_SHOULDER).x - reference.joints.getValue(Joint.RIGHT_SHOULDER).x)
         val target = needed.associateWith { joint ->
             if (joint in anchors) body.visible(joint)!! else {
                 val p = reference.joints.getValue(joint)
-                Point((shoulders.x + (p.x - rs.x) / referenceTorso * torso * handedness) / aspect,
+                Point((shoulders.x + (p.x - rs.x) / referenceSpan * span * handedness) / aspect,
                     shoulders.y + (p.y - rs.y) / referenceTorso * torso)
             }
         }

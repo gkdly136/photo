@@ -52,6 +52,11 @@ class PoseSessionTest {
         assertTrue(a.instruction.contains("左手")); assertTrue(b.instruction.contains("左手"))
         assertTrue(a.instruction.contains("画面左侧")); assertTrue(b.instruction.contains("画面右侧"))
     }
+    @Test fun shoulderWidthIsAdaptedInsteadOfAskingForTheCartoonsBodyProportions() {
+        val original = card(7).sketch(PoseView.FRONT)
+        val narrower = Body(original.joints.mapValues { (_, p) -> p.copy(x = .5f + (p.x - .5f) * .65f) })
+        assertEquals(PoseMatchState.CLOSE, PoseGeometry.compare(card(7), PoseView.FRONT, narrower, 1f)!!.state)
+    }
     @Test fun missingLowConfidenceOrNonFiniteArmDoesNotInventACorrection() {
         val body = card(2).sketch(PoseView.FRONT)
         assertNull(PoseGeometry.compare(card(2), PoseView.FRONT, Body(body.joints - Joint.LEFT_WRIST), 1f))
