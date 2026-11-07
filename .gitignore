@@ -17,3 +17,8 @@ vision/adapters/
 vision/research/local-*/
 **/__pycache__/
 *.pyc
+视频数据/
+/开始审核.html
+/third_party/ai-pose-gallery-zh/
+/third_party/ai-pose-gallery.download.json
+/third_party/ai-pose-gallery.download-report.json
