@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private lateinit var status: TextView
     private lateinit var progress: ProgressBar
     private lateinit var tipList: LinearLayout
+    private lateinit var tipScroll: ScrollView
     private lateinit var shutter: View
     private lateinit var cameraButton: Button
     private lateinit var modePortrait: Button
@@ -202,6 +203,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         tabs = row().apply { gravity = Gravity.CENTER_VERTICAL }
         horizontal.addView(tabs); advice.addView(horizontal, LinearLayout.LayoutParams(-1, dp(38)))
         val scroll = ScrollView(this).apply { isFillViewport = true }
+        tipScroll = scroll
         tipList = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(0, dp(4), dp(4), dp(6)) }
         scroll.addView(tipList); advice.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
 
@@ -323,7 +325,11 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         refreshPose(false)
         val plan = shotCoach.inspect(ShotSettings(mode, currentIntent(), composition, mood, poseSession.selected?.id),
             observation, SystemClock.elapsedRealtime(), if (demo) observation.sessionId else camera?.generation ?: -1, horizon)
+        val previousPlan = shotPlan
         shotPlan = plan
+        if (previousPlan?.revision != plan.revision || previousPlan.step.id != plan.step.id) {
+            tipScroll.post { tipScroll.scrollTo(0, 0) }
+        }
         // Legacy action/expression references remain browsable, but measured framing is owned by the chosen subject.
         var guidance = Coach.advise(mode, composition, mood, observation, horizon)
         guidance = guidance.copy(tips = listOf(plan.step.tip) + guidance.tips.filter { it.category in setOf("动作", "表情") }
@@ -341,7 +347,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         if (selectedCategory !in categories) selectedCategory = categories.firstOrNull()
         tabs.removeAllViews()
         categories.forEach { category ->
-            tabs.addView(button(category) { selectedCategory = category; renderTips() }.apply {
+            tabs.addView(button(category) { selectedCategory = category; tipScroll.scrollTo(0, 0); renderTips() }.apply {
                 textSize = 11f; setTextColor(if (selectedCategory == category) lime else muted)
                 background = rounded(if (selectedCategory == category) Color.rgb(58, 51, 44) else panel, 10)
             }, LinearLayout.LayoutParams(if (category == "本次指导") dp(80) else dp(53), dp(36)).apply { marginEnd = dp(3) })
@@ -537,6 +543,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     private fun refreshPose(redraw: Boolean = true) {
         val now = SystemClock.elapsedRealtime()
+        if (observation.atMs < 0 || now - observation.atMs !in 0..1200 || observation.detectorError) {
+            overlay.body = null; overlay.faces = emptyList()
+        }
         val previous = poseMatch
         poseMatch = poseSession.update(observation, now, ready && mode == SceneMode.PORTRAIT,
             if (demo) observation.sessionId else camera?.generation ?: -1)
