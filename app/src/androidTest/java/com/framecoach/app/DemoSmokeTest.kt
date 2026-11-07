@@ -26,7 +26,7 @@ class DemoSmokeTest {
             screenshot("portrait.png")
             onView(withText("风光")).perform(click())
             Thread.sleep(3100)
-            onView(withText(containsString("先决定天空"))).check(matches(isDisplayed()))
+            onView(withId(R.id.shot_title)).check(matches(withText("检查主体与背景的关系")))
             screenshot("landscape.png")
             scenario.recreate()
             onView(withText("演示场景 · 非实时识别")).check(matches(isDisplayed()))

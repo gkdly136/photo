@@ -15,4 +15,11 @@
     <item name="pose_chair" type="id" />
     <item name="pose_wall" type="id" />
     <item name="pose_favorites" type="id" />
+    <item name="shot_intent" type="id" />
+    <item name="shot_title" type="id" />
+    <item name="shot_instruction" type="id" />
+    <item name="shot_done" type="id" />
+    <item name="shot_skip" type="id" />
+    <item name="shot_undo" type="id" />
+    <item name="shot_facts" type="id" />
 </resources>

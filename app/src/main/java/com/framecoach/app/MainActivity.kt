@@ -53,6 +53,12 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private var targetEnabled = false
     private val favorites by lazy { getSharedPreferences("pose-library", MODE_PRIVATE).getStringSet("favorites", emptySet()).orEmpty().toMutableSet() }
     private var selectedCategory: String? = null
+    private val shotCoach = ShotCoachSession()
+    private var shotPlan: ShotPlan? = null
+    private var portraitIntent = ShotIntent.PERSON
+    private var landscapeIntent = ShotIntent.BALANCE
+    private lateinit var intentButton: Button
+    private fun currentIntent() = if (mode == SceneMode.PORTRAIT) portraitIntent else landscapeIntent
     private lateinit var tabs: LinearLayout
     private var manual = false
     private var guidesEnabled = true
@@ -102,6 +108,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             view = PoseView.entries.getOrElse(savedInstanceState.getInt("pose-view")) { PoseView.FRONT },
             chair = savedInstanceState.getBoolean("pose-chair"), wall = savedInstanceState.getBoolean("pose-wall"), mood = mood
         ), SystemClock.elapsedRealtime())
+        portraitIntent = ShotIntent.entries.firstOrNull { it.name == savedInstanceState?.getString("portrait-intent") && it.mode == SceneMode.PORTRAIT } ?: ShotIntent.PERSON
+        landscapeIntent = ShotIntent.entries.firstOrNull { it.name == savedInstanceState?.getString("landscape-intent") && it.mode == SceneMode.LANDSCAPE } ?: ShotIntent.BALANCE
         buildScreen()
         showDemo()
         if (savedInstanceState?.getBoolean("camera") == true && hasPermission()) startCamera()
@@ -116,6 +124,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         outState.putInt("pose-framing", poseSession.conditions.framing.ordinal)
         outState.putInt("pose-view", poseSession.conditions.view.ordinal)
         outState.putBoolean("pose-chair", poseSession.conditions.chair); outState.putBoolean("pose-wall", poseSession.conditions.wall)
+        outState.putString("portrait-intent", portraitIntent.name); outState.putString("landscape-intent", landscapeIntent.name)
         super.onSaveInstanceState(outState)
     }
 
@@ -140,7 +149,8 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         modeLandscape = button("风光") { changeMode(SceneMode.LANDSCAPE) }
         modes.addView(modePortrait, LinearLayout.LayoutParams(dp(70), dp(44)))
         modes.addView(modeLandscape, LinearLayout.LayoutParams(dp(70), dp(44)))
-        modes.addView(View(this), LinearLayout.LayoutParams(0, 1, 1f))
+        intentButton = button(currentIntent().label + " ▾") { chooseIntent() }.apply { id = R.id.shot_intent; setTextColor(lime) }
+        modes.addView(intentButton, LinearLayout.LayoutParams(0, dp(44), 1f))
         layoutButton = button(composition.label + "  ▾") { chooseLayout() }
         modes.addView(layoutButton, LinearLayout.LayoutParams(dp(110), dp(44)))
         root.addView(modes, LinearLayout.LayoutParams(-1, dp(52)))
@@ -158,6 +168,12 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         overlay = GuideOverlay(this).apply {
             showGuides = guidesEnabled; showBody = bodyEnabled; showPoseTarget = targetEnabled
             onHorizon = { y -> horizon = y; if (ready) renderTips(); toast("已手动标记水平线") }
+            onSubject = { id ->
+                if (shotCoach.chooseSubject(id, observation, SystemClock.elapsedRealtime(), if (demo) observation.sessionId else camera?.generation ?: -1)) {
+                    poseSession.clear(); selectedCategory = "本次指导"; refreshPose()
+                    if (ready) renderTips(); toast("已选择主角；换景后需要重新选择")
+                } else toast("该人物位置已过期，请等待新画面后再点选")
+            }
         }
         stage.addView(preview, match()); stage.addView(demoView, match()); stage.addView(overlay, match())
         badge = label("演示场景 · 非实时识别", 10f, Color.rgb(233, 230, 224)).apply {
@@ -225,7 +241,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         camera = CameraSession(this, this, preview,
             onFrame = { reading ->
                 if (!demo && started) {
-                    observation = observation.copy(light = reading.light)
+                    observation = observation.copy(light = reading.light, lightAtMs = reading.atMs)
                     val gyro = if (SystemClock.elapsedRealtime() - gyroAt < 500) gyroSpeed else 0f
                     acceptStability(gate.update(reading.sample, gyro, reading.atMs))
                 }
@@ -235,13 +251,14 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                     observation = observation.copy(faces = reading.faces, body = reading.body, detectorError = reading.error,
                         atMs = reading.atMs, frameAspect = reading.aspect, sessionId = reading.generation)
                     overlay.body = if (mode == SceneMode.PORTRAIT) reading.body else null
+                    overlay.faces = reading.faces
                     refreshPose()
                     overlay.invalidate()
                     if (ready && SystemClock.elapsedRealtime() - lastTips > 1200) renderTips()
                 }
             },
             onError = { message -> if (!demo) {
-                ready = false; gate.reset(); horizon = null
+                ready = false; gate.reset(); horizon = null; shotCoach.reset(); shotPlan = null; overlay.faces = emptyList()
                 poseSession.clear(); overlay.poseTarget = null
                 overlay.guidance = null; overlay.body = null; overlay.invalidate(); refreshPose()
                 progress.progress = 0; showWaiting(); status.text = message; toast(message)
@@ -267,6 +284,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
                 overlay.invalidate()
             }
             refreshPose()
+            if (ready && SystemClock.elapsedRealtime() - lastTips > 800) renderTips()
             handler.postDelayed(this, 200)
         }
     }
@@ -274,7 +292,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private fun acceptStability(state: Stability) {
         progress.progress = (state.progress * 100).toInt()
         if (state.moving) {
-            horizon = null; manual = false
+            horizon = null; manual = false; shotCoach.reset(); shotPlan = null; overlay.faces = emptyList()
             poseSession.clear(); overlay.poseTarget = null; camera?.invalidate()
             observation = observation.copy(faces = emptyList(), body = null, atMs = -1)
             if (ready) { overlay.guidance = null; overlay.invalidate(); showWaiting() }
@@ -303,12 +321,19 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     private fun renderTips() {
         if (!ready) return
         refreshPose(false)
+        val plan = shotCoach.inspect(ShotSettings(mode, currentIntent(), composition, mood, poseSession.selected?.id),
+            observation, SystemClock.elapsedRealtime(), if (demo) observation.sessionId else camera?.generation ?: -1, horizon)
+        shotPlan = plan
+        // Legacy action/expression references remain browsable, but measured framing is owned by the chosen subject.
         var guidance = Coach.advise(mode, composition, mood, observation, horizon)
+        guidance = guidance.copy(tips = listOf(plan.step.tip) + guidance.tips.filter { it.category in setOf("动作", "表情") }
+            .map { it.copy(basis = TipBasis.CREATIVE, evidence = "可选创作参考；不作为当前主角的自动诊断。") }, target = plan.step.target)
+        overlay.faces = if (mode == SceneMode.PORTRAIT && observation.atMs >= 0 && SystemClock.elapsedRealtime() - observation.atMs in 0..1200) observation.faces else emptyList()
         if (mode == SceneMode.PORTRAIT) {
             val poseTip = Tip("姿势", poseMatch.title, if (poseSession.selected == null) "先选一个参考动作，或打开姿势库按条件浏览。" else poseMatch.instruction,
                 if (poseMatch.measured) "当前同帧、单人可见手臂与原创二维线稿比较；只判断粗位置，未做摄影质量评分或真机标定。" else "原创动作示意；不代表已识别出当前动作。",
                 listOf("framecoach-poses"), if (poseMatch.measured) TipBasis.MEASURED else TipBasis.CREATIVE)
-            guidance = guidance.copy(tips = listOf(poseTip) + guidance.tips.filterNot { poseSession.selected != null && it.category == "动作" })
+            guidance = guidance.copy(tips = guidance.tips + poseTip)
         }
         overlay.guidance = guidance; overlay.invalidate()
         lastTips = SystemClock.elapsedRealtime()
@@ -319,9 +344,13 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             tabs.addView(button(category) { selectedCategory = category; renderTips() }.apply {
                 textSize = 11f; setTextColor(if (selectedCategory == category) lime else muted)
                 background = rounded(if (selectedCategory == category) Color.rgb(58, 51, 44) else panel, 10)
-            }, LinearLayout.LayoutParams(dp(53), dp(36)).apply { marginEnd = dp(3) })
+            }, LinearLayout.LayoutParams(if (category == "本次指导") dp(80) else dp(53), dp(36)).apply { marginEnd = dp(3) })
         }
         tipList.removeAllViews()
+        if (selectedCategory == "本次指导") {
+            renderShotPlan(plan)
+            return
+        }
         if (selectedCategory == "姿势") {
             poseSession.selected?.let { card ->
                 val selectedRow = row().apply { gravity = Gravity.CENTER_VERTICAL }
@@ -360,8 +389,45 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         }
     }
 
+    private fun chooseIntent() {
+        val options = ShotIntent.entries.filter { it.mode == mode }
+        AlertDialog.Builder(this).setTitle("这张照片想突出什么？")
+            .setSingleChoiceItems(options.map { it.label }.toTypedArray(), options.indexOf(currentIntent())) { dialog, which ->
+                if (mode == SceneMode.PORTRAIT) portraitIntent = options[which] else landscapeIntent = options[which]
+                intentButton.text = currentIntent().label + " ▾"; selectedCategory = "本次指导"
+                if (ready) renderTips(); dialog.dismiss()
+            }.setNegativeButton("返回", null).show()
+    }
+    private fun renderShotPlan(plan: ShotPlan) {
+        val step = plan.step
+        tipList.addView(label("${step.actor.label}  ·  ${step.tip.basis.label}", 10f, lime))
+        tipList.addView(label(step.tip.title, 17f, Color.rgb(244, 242, 237)).apply { id = R.id.shot_title })
+        tipList.addView(label(step.tip.instruction, 12f, Color.rgb(207, 212, 217)).apply {
+            id = R.id.shot_instruction; setPadding(0, dp(5), 0, dp(6)); setLineSpacing(dp(2).toFloat(), 1f)
+        })
+        val controls = row()
+        controls.addView(button("已确认") { advanceShot(false) }.apply { id = R.id.shot_done; isEnabled = step.actionable; setTextColor(lime) }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        controls.addView(button("跳过") { advanceShot(true) }.apply { id = R.id.shot_skip; isEnabled = step.actionable }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        controls.addView(button("撤回上步") { if (shotCoach.undo()) renderTips() }.apply { id = R.id.shot_undo; isEnabled = plan.canUndo }, LinearLayout.LayoutParams(0, dp(48), 1f))
+        tipList.addView(controls)
+        tipList.addView(button("画面观察 · 已确认 ${plan.completed} / 跳过 ${plan.skipped}") {
+            // Refresh before opening so a facts sheet never silently presents expired geometry.
+            renderTips()
+            val latest = shotPlan ?: return@button
+            AlertDialog.Builder(this).setTitle("画面观察与依据")
+                .setMessage((if (demo) "演示数据，不是实时识别。\n\n" else "") + latest.facts.joinToString("\n\n") + "\n\n本步依据：" + latest.step.tip.evidence)
+                .setPositiveButton("返回", null).setNeutralButton("重新观察") { _, _ -> resetAnalysis() }.show()
+        }.apply { id = R.id.shot_facts; textSize = 11f }, LinearLayout.LayoutParams(-1, dp(48)))
+    }
+    private fun advanceShot(skip: Boolean) {
+        // Revalidate timestamps and subject before accepting a tap; a visible old card is not permission to advance.
+        val previous = shotPlan ?: return
+        renderTips()
+        if (previous.revision == shotPlan?.revision && previous.step.id == shotPlan?.step?.id && shotCoach.advance(skip)) renderTips()
+    }
+
     private fun resetAnalysis() {
-        camera?.invalidate(); poseSession.clear(); overlay.poseTarget = null
+        camera?.invalidate(); poseSession.clear(); overlay.poseTarget = null; shotCoach.reset(); shotPlan = null; overlay.faces = emptyList()
         gate.reset(); ready = false; manual = false; selectedCategory = null; horizon = null; progress.progress = 0
         overlay.guidance = null; overlay.body = null; overlay.invalidate()
         observation = if (demo) demoObservation() else Observation(observation.light)
@@ -390,6 +456,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         modeLandscape.background = rounded(if (mode == SceneMode.LANDSCAPE) panel else ink)
         overlay.landscape = mode == SceneMode.LANDSCAPE; overlay.layout = composition
         poseBar.visibility = if (mode == SceneMode.PORTRAIT) View.VISIBLE else View.GONE
+        intentButton.text = currentIntent().label + " ▾"
     }
     private fun chooseLayout() {
         AlertDialog.Builder(this).setTitle("选择你想尝试的构图")
@@ -448,12 +515,12 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             }.setNegativeButton("关闭", null).show()
     }
     private fun showKnowledge() {
-        AlertDialog.Builder(this).setTitle("观景 · 0.3 姿势参考试用版")
+        AlertDialog.Builder(this).setTitle("观景 · 0.4 分步拍摄向导")
             .setMessage("稳定取景 → 观察画面 → 尝试建议 → 保存照片\n\n实时帧在本机处理，应用代码不上传照片。不识别身份，不对容貌或情绪打分。只保存你主动拍摄的照片，辅助线不会写进原片。ML Kit 自身的数据实践请见项目隐私说明。\n\n风光水平线由你手动标记；单帧亮度无法确定太阳方向。复杂人群、暗光、遮挡和动态背景会影响检测。\n\n当前支持手机相机，不支持连接单反或微单的实时取景。公开课程和书目用于知识整理，并未读完你提到的所有书籍，也未用获奖作品训练模型。")
             .setPositiveButton("查看知识来源") { _, _ -> chooseSource(Knowledge.sources) }
             .setNeutralButton("辅助逻辑") { _, _ ->
                 AlertDialog.Builder(this).setTitle("这些建议是怎样来的？")
-                    .setMessage("① 观察取景约 2.5 秒，容忍轻微手抖；确认持续移动才重新计时。也可点击「立即辅助」。\n\n② 在本机测量预览亮度、人脸位置、头部转角和人体关键点。关键点只描述位置，并不理解动作是否好看。\n\n③ 结合你选的构图和氛围，用规则生成建议。画面测量代表有检测依据；创作建议是可尝试的模板。没有人脸时不画目标圈。\n\n④ 风光尚未自动识别天空、道路、山峰，水平线需手动标记。表情来自你的氛围选择，不是情绪识别。\n\n当前没有专门训练摄影审美模型，也未把书籍或获奖照片训练进模型。实时照片不用于在线学习。")
+                    .setMessage("① 观察取景约 2.5 秒，容忍轻微手抖；确认持续移动才重新计时。也可点击「立即辅助」。\n\n② 在本机测量预览亮度、人脸位置、头部转角和人体关键点。关键点只描述位置，并不理解动作是否好看。\n\n③ 结合手选拍摄意图、构图和氛围，优先显示一条建议。多人时需点选主角；主角丢失或结果过期时暂停指导。已确认、跳过和撤回只管理本次步骤，不代表审美评分。\n\n④ 风光尚未自动识别天空、道路、山峰，水平线需手动标记。表情来自你的氛围选择，不是情绪识别。\n\n当前没有专门训练摄影审美模型，也未把书籍或获奖照片训练进模型。实时照片不用于在线学习。")
                     .setPositiveButton("明白了", null).show()
             }
             .setNegativeButton("关闭", null).show()
@@ -511,7 +578,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 
     private fun demoObservation(): Observation {
-        if (mode == SceneMode.LANDSCAPE) return Observation(Light(.5f, .1f, .02f))
+        if (mode == SceneMode.LANDSCAPE) return Observation(Light(.5f, .1f, .02f), lightAtMs = SystemClock.elapsedRealtime())
         val scale = if (demoView.width > 0) minOf(demoView.width, demoView.height).toFloat() / demoView.width else 1f
         return Observation(Light(.5f, .1f, .02f), listOf(Face(Point(.43f, .34f), .08f * scale, .10f, 0f, null)), Body(mapOf(
             Joint.LEFT_SHOULDER to Point(.385f, .42f), Joint.RIGHT_SHOULDER to Point(.48f, .42f),
@@ -521,7 +588,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
             Joint.LEFT_KNEE to Point(.397f, .73f), Joint.RIGHT_KNEE to Point(.475f, .73f),
             Joint.LEFT_ANKLE to Point(.39f, .84f), Joint.RIGHT_ANKLE to Point(.49f, .83f)
         ).mapValues { (_, point) -> point.copy(x = .43f + (point.x - .43f) * scale) }),
-            atMs = SystemClock.elapsedRealtime(), frameAspect = if (overlay.height > 0) overlay.width.toFloat() / overlay.height else 1f)
+            atMs = SystemClock.elapsedRealtime(), frameAspect = if (overlay.height > 0) overlay.width.toFloat() / overlay.height else 1f, lightAtMs = SystemClock.elapsedRealtime())
     }
     private fun row() = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
     private fun label(value: String, size: Float, color: Int) = TextView(this).apply {

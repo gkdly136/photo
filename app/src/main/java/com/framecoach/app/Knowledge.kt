@@ -4,6 +4,7 @@ data class Source(val id: String, val title: String, val url: String, val note: 
 
 object Knowledge {
     val sources = listOf(
+        Source("framecoach-workflow", "观景 · 拍摄意图与分步向导", "https://github.com/gkdly136/photo/blob/codex/android-framecoach/docs/SHOT_COACH.md", "参考 Camera Coach 的意图与分步流程、SACD 的主体条件及保守推荐方法，使用原创规则实现。背景语义和光源方向尚未识别；用户确认不等于照片质量验证，没有新增云端调用。"),
         Source("framecoach-poses", "观景 · 原创姿势卡与手臂对照", "https://github.com/gkdly136/photo/blob/codex/android-framecoach/docs/POSE_LIBRARY_IMPLEMENTATION.md", "40 个原创线稿动作，未使用第三方图库图片、描图或提取骨架。坐姿与靠姿需用户确认条件；只有单人可见手臂参与粗位置比较。线稿未经真实摄影标定，不判断情绪、美观或三维姿态。"),
         Source("shore-nature", "斯蒂芬·肖尔 · 照片的本质", "https://www.phaidon.com/en-us/products/the-nature-of-photographs", "已核对 The Nature of Photographs: A Primer 的 Phaidon 书介，ISBN 9780714859040。用于理解照片与观看的研究方向；未通读全书，不将其简化为三分法评分。"),
         Source("kelby-landscape", "Scott Kelby · 风光摄影公开节选", "https://rockynook.com/article/landscape-recipes/", "已阅读出版社公开的 Landscape Recipes 节选，涉及倒影、前景、天空占比和机位。建议依据为原创概括；不复制原图，也不把单张示例的参数套用到手机。"),

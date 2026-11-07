@@ -12,7 +12,7 @@ data class Body(val joints: Map<Joint, Point>) {
 }
 data class Light(val mean: Float, val shadows: Float, val highlights: Float)
 data class Observation(val light: Light, val faces: List<Face> = emptyList(), val body: Body? = null, val detectorError: Boolean = false,
-                       val atMs: Long = -1, val frameAspect: Float = 1f, val sessionId: Long = 0)
+                       val atMs: Long = -1, val frameAspect: Float = 1f, val sessionId: Long = 0, val lightAtMs: Long = -1)
 enum class TipBasis(val label: String) { MEASURED("画面测量"), CREATIVE("创作建议") }
 data class Tip(val category: String, val title: String, val instruction: String, val evidence: String, val sourceIds: List<String>, val basis: TipBasis = TipBasis.CREATIVE)
 data class Guidance(val tips: List<Tip>, val target: Point?, val horizon: Float?)

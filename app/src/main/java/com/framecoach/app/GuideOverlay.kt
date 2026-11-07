@@ -16,6 +16,9 @@ class GuideOverlay(context: Context) : View(context) {
     var showBody = false
     var landscape = false
     var onHorizon: ((Float) -> Unit)? = null
+    var faces: List<Face> = emptyList()
+    var onSubject: ((Int) -> Unit)? = null
+    private var touchedFace: Int? = null
     private val lime = Color.rgb(235, 198, 151)
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val density = resources.displayMetrics.density
@@ -24,6 +27,16 @@ class GuideOverlay(context: Context) : View(context) {
         super.onDraw(canvas)
         if (!showGuides) return
         val w = width.toFloat(); val h = height.toFloat()
+        if (!landscape && faces.size > 1) {
+            paint.style = Paint.Style.STROKE; paint.strokeWidth = 2 * density; paint.color = lime
+            faces.forEachIndexed { index, face ->
+                canvas.drawRect((face.center.x - face.width / 2) * w, (face.center.y - face.height / 2) * h,
+                    (face.center.x + face.width / 2) * w, (face.center.y + face.height / 2) * h, paint)
+                paint.textSize = 12 * density
+                canvas.drawText("${index + 1} · 点选主角", (face.center.x - face.width / 2) * w,
+                    ((face.center.y - face.height / 2) * h - 5 * density).coerceAtLeast(18 * density), paint)
+            }
+        }
         paint.style = Paint.Style.STROKE; paint.strokeWidth = density
         paint.color = Color.argb(55, 255, 255, 255)
         when (layout) {
@@ -70,6 +83,21 @@ class GuideOverlay(context: Context) : View(context) {
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (!landscape && onSubject != null && width > 0 && height > 0) {
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                val x = event.x / width; val y = event.y / height
+                touchedFace = faces.filter { it.trackingId != null &&
+                    kotlin.math.abs(x - it.center.x) <= maxOf(it.width / 2, .04f) &&
+                    kotlin.math.abs(y - it.center.y) <= maxOf(it.height / 2, .04f) }
+                    .minByOrNull { kotlin.math.abs(x - it.center.x) + kotlin.math.abs(y - it.center.y) }?.trackingId
+                return touchedFace != null
+            }
+            if (event.action == MotionEvent.ACTION_UP && touchedFace != null) {
+                performClick(); onSubject?.invoke(touchedFace!!); touchedFace = null; return true
+            }
+            if (event.action == MotionEvent.ACTION_CANCEL) touchedFace = null
+            return touchedFace != null
+        }
         if (!landscape || !showGuides) return false
         if (event.action == MotionEvent.ACTION_UP) { performClick(); onHorizon?.invoke((event.y / height).coerceIn(0f, 1f)) }
         return true
